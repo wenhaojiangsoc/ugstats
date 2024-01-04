@@ -1,0 +1,666 @@
+---
+title: "Week 9: Lab 9 Multivariate Regression"
+author: "Wenhao Jiang"
+institute: |
+           | Department of Sociology
+           | New York University
+date: November 4, 2022
+output: beamer_presentation
+classoption: "aspectratio=1610"
+theme: "default"
+outertheme: "miniframes"
+header-includes:
+  - \definecolor{nagivation}{rgb}{0,0,0.3}
+  - \definecolor{main}{rgb}{0,0,0.5}
+  - \setbeamercolor{section in head/foot}{bg=nagivation,fg=white}
+  - \usecolortheme[named=main]{structure}
+  - \setbeamertemplate{footline}[page number]
+  - \setbeamerfont{footnote}{size=\footnotesize}
+  - \setbeamerfont{caption}{size=\footnotesize}
+---
+
+# Multivariate Regression
+
+## Multivariate Regression Basics
+
+- We talked about bivariate regression in last week's lab
+- For example, we use income as the main **dependent variable** and years of education as the main **independent variable** in a bivariate regression, assuming we are interested in the returns to education
+- $y_i = \hat{\beta}_0 + \hat{\beta}_1x_i + e_i$ \pause
+- We also noted that $\hat{\beta}_1$ may not capture the *causal* effect of education on income, as other factors including family background may affect both years of education and income
+- In an extreme case, the positive association between education and income is completely driven by family income (family income -> more years of education \& family income -> higher individual income) \pause
+- This is called **confounding**, as typical cause of **spurious** correlation
+
+---
+
+## Multivariate Regression Basics
+
+- Confounding
+
+```{r,warning=FALSE,message=FALSE,echo=FALSE,fig.height=3, fig.width=3, fig.align="center"}
+library(ggdag)
+library(ggplot2)
+library(dplyr)
+theme_set(theme_dag())
+dagify(income ~ famincome,
+       educ. ~ famincome) %>%
+  ggdag(node=FALSE, text_size= 3, text_col = "darkblue", node_size = 20,
+        edge_type = "link_arc") +
+  theme_dag_blank() 
+```
+
+---
+
+## Multivariate Regression Basics
+
+- In most cases, **confounding** factors (e.g., family income) do not fully capture the original association of interest (e.g., the association between education and income)
+- We therefore want to **control** for these confounding factors \pause
+  - What does *control* mean? It means, conditioning on the same level of e.g. family income, what is the average asssociation between years of education and income \pause
+- Potential **confounding** effect is the main reason why we need to go beyond bivariate regression to multivariate regression
+
+---
+
+## Multivariate Regression Basics
+
+- We already know that a bivariate association, when plotted on a scatter plot, looks like
+
+```{r,message=FALSE, fig.height=2.5, fig.width=4, fig.align="center", echo=FALSE, warning=FALSE}
+## create a population
+x <- runif(10000, min=0, max=100)
+beta1 <- 2.5
+beta0 <- 20
+epsilon <- rnorm(10000,mean=0,sd=120)
+y <- beta0+beta1*x+epsilon
+
+## draw a sample
+set.seed(1)
+pop <- data.frame(x=x,y=y)
+sample <- pop[sample(nrow(pop), 1000), ]
+
+## plot the sample-level correlation
+sample %>%
+  ggplot(aes(x=x,y=y)) +
+  geom_point(size=0.5, color="steelblue") +
+  xlab("Years of edu.") +
+  ylab("Income") +
+  ylim(-250,500) +
+  theme_bw()
+```
+
+---
+
+## Multivariate Regression Basics
+
+- Adding one more variable (i.e., two **independent** variables) would make the scatter plot look like:
+
+```{r,message=FALSE, fig.height=4, fig.width=5.5, fig.align="center", echo=FALSE, warning=FALSE}
+library(scatterplot3d)
+## create a population
+x1 <- runif(10000, min=0, max=20)
+x2 <- runif(10000, min=0, max=100)
+beta1 <- 25
+beta2 <- 15
+beta0 <- 25000
+epsilon <- rnorm(10000,mean=0,sd=500)
+y <- beta0+beta1*x1+beta2*x2+epsilon
+
+## draw a sample
+set.seed(1)
+pop <- data.frame(education=x1,famincome=x2,income=y)
+sample <- pop[sample(nrow(pop), 1000), ]
+
+## plot the sample-level correlation
+scatterplot3d(sample, pch = 16, 
+              cex.symbols=0.4*par("cex"),
+              color="steelblue",
+              cex.axis=0.5*par("cex.axis"),
+              cex.lab=0.5*par("cex.lab"), 
+              font.axis=0.5*par("font.axis"),
+              font.lab=0.5*par("font.lab"))
+```
+
+---
+
+## Multivariate Regression Basics
+
+- We see a positive association both between education and income, and between family income and income
+- We want to estimate the association between education and income, conditioning on the same level of family income \pause
+- We cannot plot the points when there are three or more independent variables (i.e., we cannot imagine a 4-D or more-D case), but we can imagine the analogy \pause
+- We use multivariate regression to estimate the associations
+- $y_i = \hat{\beta}_0 + \hat{\beta}_1x_{1i} + \hat{\beta}_2x_{2i} + e_i$
+
+--- 
+
+## Exercise
+
+- True or False Statement
+- Just as in the bivariate regression, we estimate $\hat{\beta}_0, \hat{\beta}_1, \hat{\beta}_2$ by minimizing $\sum_{i=1}^{n}e_i^2$, where $e_i = y_i - (\hat{\beta}_0 + \hat{\beta}_1x_{1i} + \hat{\beta}_2x_{2i})$
+
+---
+
+## Multivariate Regression Basics
+
+- The estimate of a bivariate regression is a linear line, when using OLS (Ordinary Least Square) \pause
+- The estimate of a trivariate regression is a plane, when using OLS
+
+```{r,message=FALSE, fig.height=4, fig.width=5.5, fig.align="center", echo=FALSE, warning=FALSE}
+library(scatterplot3d)
+## create a population
+x1 <- runif(10000, min=0, max=20)
+x2 <- runif(10000, min=0, max=100)
+beta1 <- 25
+beta2 <- 15
+beta0 <- 25000
+epsilon <- rnorm(10000,mean=0,sd=500)
+y <- beta0+beta1*x1+beta2*x2+epsilon
+
+## draw a sample
+set.seed(1)
+pop <- data.frame(education=x1,famincome=x2,income=y)
+sample <- pop[sample(nrow(pop), 1000), ]
+
+## plot the sample-level correlation
+s3d <-
+  scatterplot3d(sample, pch = 16, 
+              cex.symbols=0.4*par("cex"),
+              color="steelblue",
+              cex.axis=0.5*par("cex.axis"),
+              cex.lab=0.5*par("cex.lab"), 
+              font.axis=0.5*par("font.axis"),
+              font.lab=0.5*par("font.lab"))
+
+# Add regression plane
+my.lm <- lm(sample$income ~ sample$education + sample$famincome)
+s3d$plane3d(my.lm)
+```
+
+## Multivariate Regression Basics
+
+- The estimate of a trivariate regression is a plane, when using OLS
+
+```{r,message=FALSE, fig.height=4, fig.width=5.5, fig.align="center", echo=FALSE, warning=FALSE}
+library(scatterplot3d)
+## create a population
+x1 <- runif(10000, min=0, max=20)
+x2 <- runif(10000, min=0, max=100) + runif(10000, min=0, max=2)*x1 +rnorm(10000,mean=0,sd=20)
+beta1 <- 25
+beta2 <- 15
+beta0 <- 25000
+epsilon <- rnorm(10000,mean=0,sd=500)
+y <- beta0+beta1*x1+beta2*x2+epsilon
+
+## draw a sample
+set.seed(1)
+pop <- data.frame(education=x1,famincome=x2,income=y)
+sample <- pop[sample(nrow(pop), 1000), ]
+
+## plot the sample-level correlation
+s3d <-
+  scatterplot3d(sample, pch = 16, 
+              cex.symbols=0.4*par("cex"),
+              color="steelblue",
+              cex.axis=0.5*par("cex.axis"),
+              cex.lab=0.5*par("cex.lab"), 
+              font.axis=0.5*par("font.axis"),
+              font.lab=0.5*par("font.lab"))
+
+# Add regression plane
+my.lm <- lm(sample$income ~ sample$education + sample$famincome)
+s3d$plane3d(my.lm)
+```
+
+## Multivariate Regression Basics
+
+\footnotesize
+
+```{r, message=FALSE, warning=FALSE, results="asis", echo=FALSE}
+library(stargazer)
+model1 <- lm(income ~ education, sample)
+model2 <- lm(income ~ education + famincome, sample)
+stargazer(model1, model2, out = "text",
+          single.row = F,
+          header=FALSE,
+          title = "The association between education and income",
+          digits = 2,
+          omit.stat = c("rsq","f","ser"))
+
+```
+
+---
+
+## Multivariate Regression Basics
+
+- A particular scenario is when the second independent variable is a binary (i.e., only two values available) variable (e.g., gender, although sociologically there may be more)
+- $income_i = \hat{\beta}_0 + \hat{\beta}_1educ_{i} + \hat{\beta}_2women_{i} + e_i$
+- Here $women_i = 1$ when the R is a woman, and $women_i = 0$ when the R is a man
+
+---
+
+## Multivariate Regression Basics
+
+```{r,message=FALSE, fig.height=4, fig.width=5.5, fig.align="center", echo=FALSE, warning=FALSE}
+library(scatterplot3d)
+## create a population
+x1 <- runif(10000, min=0, max=20)
+x2 <- rbinom(10000, size=1, prob=0.5)
+beta1 <- 4000
+beta2 <- -20000
+beta0 <- 25000
+epsilon <- rnorm(10000,mean=0,sd=10000)
+y <- beta0+beta1*x1+beta2*x2+epsilon
+
+## draw a sample
+set.seed(1)
+pop <- data.frame(education=x1,women=x2,income=y)
+sample <- pop[sample(nrow(pop), 1000), ]
+
+## plot the sample-level correlation
+colors <- c("#999999", "#E69F00")
+colors <- colors[as.numeric(sample$women)+1]
+scatterplot3d(sample, pch = 16, 
+              color=colors,
+              cex.symbols=0.4*par("cex"),
+              cex.axis=0.5*par("cex.axis"),
+              cex.lab=0.5*par("cex.lab"), 
+              font.axis=0.5*par("font.axis"),
+              font.lab=0.5*par("font.lab"))
+```
+
+---
+
+## Multivariate Regression Basics
+
+- In this particular scenario, we can also visualize the 3-D plot by a 2-D scatterplot
+
+```{r,message=FALSE, fig.height=2.5, fig.width=4, fig.align="center", echo=FALSE, warning=FALSE}
+## create a population
+x1 <- runif(10000, min=0, max=20)
+x2 <- rbinom(10000, size=1, prob=0.5)
+beta1 <- 4000
+beta2 <- -20000
+beta0 <- 25000
+epsilon <- rnorm(10000,mean=0,sd=10000)
+y <- beta0+beta1*x1+beta2*x2+epsilon
+
+## draw a sample
+set.seed(1)
+pop <- data.frame(education=x1,women=x2,income=y)
+sample <- pop[sample(nrow(pop), 1000), ]
+
+## plot the association by gender
+sample %>%
+  ggplot(aes(y=income,x=education,group=factor(women), 
+             color=factor(women))) +
+  geom_point(size=0.5) +
+  scale_color_manual(values=c("#999999", "#E69F00"),
+                     labels = c("Men","Women"),
+                     name = "") +
+  theme_bw()
+```
+
+---
+
+## Multivariate Regression Basics
+
+- Instead of fitting a multivariate regression, we can also fit the regression line to each gender
+- Here, the slope for men and women are the same
+
+```{r,message=FALSE, fig.height=2.5, fig.width=4, fig.align="center", echo=FALSE, warning=FALSE}
+## create a population
+x1 <- runif(10000, min=0, max=20)
+x2 <- rbinom(10000, size=1, prob=0.5)
+beta1 <- 4000
+beta2 <- -20000
+beta0 <- 25000
+epsilon <- rnorm(10000,mean=0,sd=10000)
+y <- beta0+beta1*x1+beta2*x2+epsilon
+
+## draw a sample
+set.seed(1)
+pop <- data.frame(education=x1,women=x2,income=y)
+sample <- pop[sample(nrow(pop), 1000), ]
+
+## plot the association by gender
+sample %>%
+  ggplot(aes(y=income,x=education,group=factor(women), 
+             color=factor(women))) +
+  geom_point(size=0.3) +
+  scale_color_manual(values=c("#999999", "#E69F00"),
+                     labels = c("Men","Women"),
+                     name = "") +
+  geom_smooth(method = "lm",lwd=0.3) +
+  theme_bw()
+```
+
+---
+
+## Multivariate Regression Basics
+
+- The slope for men and women can also differ
+
+```{r,message=FALSE, fig.height=2.5, fig.width=4, fig.align="center", echo=FALSE, warning=FALSE}
+## create a population
+x1 <- runif(10000, min=0, max=20)
+x2 <- rbinom(10000, size=1, prob=0.5)
+beta1 <- 4000
+beta2 <- -20000
+beta3 <- -2000
+beta0 <- 25000
+epsilon <- rnorm(10000,mean=0,sd=10000)
+y <- beta0+beta1*x1+beta2*x2+beta3*x1*x2+epsilon
+
+## draw a sample
+set.seed(1)
+pop <- data.frame(education=x1,women=x2,income=y)
+sample <- pop[sample(nrow(pop), 1000), ]
+
+## plot the association by gender
+sample %>%
+  ggplot(aes(y=income,x=education,group=factor(women), 
+             color=factor(women))) +
+  geom_point(size=0.3) +
+  scale_color_manual(values=c("#999999", "#E69F00"),
+                     labels = c("Men","Women"),
+                     name = "") +
+  geom_smooth(method = "lm",lwd=0.3) +
+  theme_bw()
+```
+
+---
+
+## Multivariate Regression Intepretation
+
+- Suppose in the above case, we find that
+- $income_i = 5000 + 3000educ_i-10000women_i+e_i$
+- How do we intepret the results? \pause
+  - Conditioning on the same gender, an additional year of education is associated with \$3000 more income.      - Note that returns to education can differ by gender, so the estimate here is the average return across men and women.
+  - For example, if the return for men is 4000 and 2000 for women, and the number of men and women is the same, we would still get $\hat{\beta}_1 = 3000$ \pause
+  - Conditional on the same level of education, men on average earn \$10000 more income than women
+  - Similarly, the gender pay gap can differ at each level of education, so the estimate here is the average gender gap across different levels of education
+
+---
+
+## Multivariate Regression: Interaction
+
+- When the slope for men and women differs (equivalently, the gender pay gap differs at each level of education), we do not observe it from the single equation: $income_i = 5000 + 3000educ_i-10000women_i+e_i$
+- We therefore want the **interaction** between gender and education, which literally means
+- The effect of education on income depends on gender, and the effect of gender depends on education \pause
+- How do we operationalize the interaction? We add a product of education and gender
+
+--- 
+
+## Multivariate Regression: Interaction
+
+- Without interaction: $income_i = \hat{\beta}_0 + \hat{\beta}_1educ_{i} + \hat{\beta}_2women_{i} + e_i$
+- With interaction: $income_i = \hat{\beta}_0 + \hat{\beta}_1educ_{i} + \hat{\beta}_2women_{i} + \hat{\beta}_3educ_i \times women_{i} + e_i$ \pause
+- Without interaction: $\partial{income_i}/\partial{educ_i} = \hat{\beta}_1$
+- Without interaction: $\partial{income_i}/\partial{women_i} = \hat{\beta}_2$ \pause
+- With interaction: $\partial{income_i}/\partial{educ_i} = \hat{\beta}_1 + \hat{\beta}_3women_i$
+- With interaction: $\partial{income_i}/\partial{women_i} = \hat{\beta}_2 + \hat{\beta}_3educ_i$ \pause
+- When we look at the effect of education on income by gender, using an interaction is the same as regressing income on education by gender separately \pause
+
+---
+
+## Multivariate Regression: Interaction
+
+- Do not confuse interaction with **mediation** and **confounding**. In the case of e.g. estimating the effect of gender on attitudes towards abortion, religious belief can never be a confounding factor. Why? \pause
+- In the case of e.g. estimating the effect of gender on attitudes towards abortion, religious belief likely interacts with gender (which is never observed if the regression does not create the product), or mediates the effect of gender on abortion attitudes. (Go back to Page 4 of Mike's Review slides to see if you understand why the regression table indicates a mediation)
+
+---
+
+## Multivariate Regression: Estimates
+
+- Again, we estimate $\hat{\beta}_0, \hat{\beta}_1, \hat{\beta}_2$ by minimizing $\sum_{i=1}^{n}e_i^2$, where $e_i = y_i - (\hat{\beta}_0 + \hat{\beta}_1x_{1i} + \hat{\beta}_2x_{2i})$
+- In bivariate regression, $\hat{\beta}_1 = \frac{Cov(x_i,y_i)}{Var(x_1)}$ and $\bar{y} = \hat{\beta}_0 + \hat{\beta}_1 \bar{x}$ \pause
+- In multivariate regression, vector $\boldsymbol{\hat{\beta}}$ is $(\boldsymbol{X}^{T}\boldsymbol{X})^{-1}\boldsymbol{X}^{T}\boldsymbol{Y}$. You will need a whole semester's Linear Algebra to understand the magic behind it (definitely not required in the course although it appears on the lecture notes) \pause
+- But as a little anatomy of multivariate regression $y_i = \hat{\beta}_0 + \hat{\beta}_1x_{1i} + \hat{\beta}_2x_{2i} + ... + \hat{\beta}_kx_{ki} + e_i$
+- $\hat{\beta}_k = \frac{Cov(\tilde{x}_{ki},y_i)}{Var(\tilde{x}_{ki})}$, where $\tilde{x}_{ki}$ is the residual from a regression of $x_{ki}$ on all other covariates (i.e., $x_{1i}...x_{k-1i}$)
+
+---
+
+## Multivariate Regression: Predicted Values
+
+- We can fit/predict values from regression equation
+- For example, in the regression, $income_i = 5000 + 3000educ_i-10000women_i+e_i$, what is the predicted income for a man with 12 years of education? \pause
+- What about the predicted income for a woman with 16 years of education? \pause
+- The predictions are related to the calculation of $R^2 = Var(\hat{y}_i)/Var(y_i)$, where $\hat{y}_i$ are the predicted values
+
+# Exercise
+
+## R Squared
+
+- True or False statement
+- $R^2$ cannot be greater or equal than 1 \pause
+- When $x_i$ and $y_i$ are indpendent with each other, i.e., $x_i$ has no predicting power at all, $R^2 = 0$
+
+---
+
+## t-score
+
+- True or False statement
+- The formula and the calculation of the $t-$score is the same as the $z-$score \pause
+  - $t = \frac{point \: estimate - null \: hypothesis}{SE}$ \pause
+  
+  
+- True or False statement
+- At the same Significance Level (e.g., $\alpha = 0.05$), the corresponding $t$-score is smaller than the $z-$score (e.g., 1.96) \pause 
+
+- True or False statement
+- In regression analysis, the null hypothesis is $\beta_{k} = 0$, and $t = \frac{\hat{\beta}_{k} - 0}{SE_{\hat{\beta}_{k}}}$
+
+---
+
+## t-score and regression
+
+- What is the null hypothesis for the slope of `women`?
+\footnotesize
+
+```{r,message=FALSE, fig.height=2.5, fig.width=4, fig.align="center", echo=FALSE, warning=FALSE, results="asis"}
+## create a population
+x1 <- runif(10000, min=0, max=20)
+x2 <- rbinom(10000, size=1, prob=0.5)
+beta1 <- 4000
+beta2 <- -10
+beta0 <- 25000
+epsilon <- rnorm(10000,mean=0,sd=10000)
+y <- beta0+beta1*x1+beta2*x2+epsilon
+
+## draw a sample
+set.seed(1)
+pop <- data.frame(education=x1,women=x2,income=y)
+sample <- pop[sample(nrow(pop), 1000), ]
+model1 <- lm(income ~ education + women, sample)
+
+## create a population
+x1 <- runif(10000, min=0, max=20)
+x2 <- rbinom(10000, size=1, prob=0.5)
+beta1 <- 4000
+beta2 <- -10
+beta3 <- -1000
+beta0 <- 25000
+epsilon <- rnorm(10000,mean=0,sd=10000)
+y <- beta0+beta1*x1+beta2*x2+beta3*x1*x2+epsilon
+
+## draw a sample
+set.seed(2)
+pop <- data.frame(education=x1,women=x2,income=y)
+sample <- pop[sample(nrow(pop), 1000), ]
+model2 <- lm(income ~ education + women + education*women, sample)
+
+stargazer(model1, model2, out = "text",
+          single.row = T,
+          header=FALSE,
+          title = "The association between education and income",
+          digits = 2,
+          omit.stat = c("rsq","f","ser"))
+```
+
+---
+
+## t-score and regression
+
+- What is the $t-$score for the slope of `women` in column 1?
+
+\footnotesize
+
+```{r,message=FALSE, fig.height=2.5, fig.width=4, fig.align="center", echo=FALSE, warning=FALSE, results="asis"}
+## create a population
+x1 <- runif(10000, min=0, max=20)
+x2 <- rbinom(10000, size=1, prob=0.5)
+beta1 <- 4000
+beta2 <- -10
+beta0 <- 25000
+epsilon <- rnorm(10000,mean=0,sd=10000)
+y <- beta0+beta1*x1+beta2*x2+epsilon
+
+## draw a sample
+set.seed(1)
+pop <- data.frame(education=x1,women=x2,income=y)
+sample <- pop[sample(nrow(pop), 1000), ]
+model1 <- lm(income ~ education + women, sample)
+
+## create a population
+x1 <- runif(10000, min=0, max=20)
+x2 <- rbinom(10000, size=1, prob=0.5)
+beta1 <- 4000
+beta2 <- -10
+beta3 <- -1000
+beta0 <- 25000
+epsilon <- rnorm(10000,mean=0,sd=10000)
+y <- beta0+beta1*x1+beta2*x2+beta3*x1*x2+epsilon
+
+## draw a sample
+set.seed(1)
+pop <- data.frame(education=x1,women=x2,income=y)
+sample <- pop[sample(nrow(pop), 1000), ]
+model2 <- lm(income ~ education + women + education*women, sample)
+
+stargazer(model1, model2, out = "text",
+          single.row = T,
+          header=FALSE,
+          title = "The association between education and income",
+          digits = 2,
+          omit.stat = c("rsq","f","ser"))
+```
+
+---
+
+## t-score and regression
+
+- Do we reject the null hypothesis at $\alpha = 0.05$?
+\footnotesize
+
+```{r,message=FALSE, fig.height=2.5, fig.width=4, fig.align="center", echo=FALSE, warning=FALSE, results="asis"}
+## create a population
+x1 <- runif(10000, min=0, max=20)
+x2 <- rbinom(10000, size=1, prob=0.5)
+beta1 <- 4000
+beta2 <- -10
+beta0 <- 25000
+epsilon <- rnorm(10000,mean=0,sd=10000)
+y <- beta0+beta1*x1+beta2*x2+epsilon
+
+## draw a sample
+set.seed(1)
+pop <- data.frame(education=x1,women=x2,income=y)
+sample <- pop[sample(nrow(pop), 1000), ]
+model1 <- lm(income ~ education + women, sample)
+
+## create a population
+x1 <- runif(10000, min=0, max=20)
+x2 <- rbinom(10000, size=1, prob=0.5)
+beta1 <- 4000
+beta2 <- -10
+beta3 <- -1000
+beta0 <- 25000
+epsilon <- rnorm(10000,mean=0,sd=10000)
+y <- beta0+beta1*x1+beta2*x2+beta3*x1*x2+epsilon
+
+## draw a sample
+set.seed(1)
+pop <- data.frame(education=x1,women=x2,income=y)
+sample <- pop[sample(nrow(pop), 1000), ]
+model2 <- lm(income ~ education + women + education*women, sample)
+
+stargazer(model1, model2, out = "text",
+          single.row = T,
+          header=FALSE,
+          title = "The association between education and income",
+          digits = 2,
+          omit.stat = c("rsq","f","ser"))
+```
+
+---
+
+## t-score and regression
+
+- Does the association between education and income depend on gender?
+
+\footnotesize
+
+```{r,message=FALSE, fig.height=2.5, fig.width=4, fig.align="center", echo=FALSE, warning=FALSE, results="asis"}
+## create a population
+x1 <- runif(10000, min=0, max=20)
+x2 <- rbinom(10000, size=1, prob=0.5)
+beta1 <- 4000
+beta2 <- -10
+beta0 <- 25000
+epsilon <- rnorm(10000,mean=0,sd=10000)
+y <- beta0+beta1*x1+beta2*x2+epsilon
+
+## draw a sample
+set.seed(1)
+pop <- data.frame(education=x1,women=x2,income=y)
+sample <- pop[sample(nrow(pop), 1000), ]
+model1 <- lm(income ~ education + women, sample)
+
+## create a population
+x1 <- runif(10000, min=0, max=20)
+x2 <- rbinom(10000, size=1, prob=0.5)
+beta1 <- 4000
+beta2 <- -10
+beta3 <- -1000
+beta0 <- 25000
+epsilon <- rnorm(10000,mean=0,sd=10000)
+y <- beta0+beta1*x1+beta2*x2+beta3*x1*x2+epsilon
+
+## draw a sample
+set.seed(1)
+pop <- data.frame(education=x1,women=x2,income=y)
+sample <- pop[sample(nrow(pop), 1000), ]
+model2 <- lm(income ~ education + women + education*women, sample)
+
+stargazer(model1, model2, out = "text",
+          single.row = T,
+          header=FALSE,
+          title = "The association between education and income",
+          digits = 2,
+          omit.stat = c("rsq","f","ser"))
+```
+
+---
+
+## Regression Estimates
+
+- To study the association between education ($x_i$) and income ($y_i$), a researcher collected $n=501$ individuals, finding that $\bar{x} = 15$, $\bar{y} = 45000$, $\frac{1}{500}\sum_{i=1}^{n}(x_i-\bar{x})(y_i-\bar{y}) = 10000$, $\frac{1}{500}\sum_{i=1}^{n}(x_i-\bar{x})^2 = 2.5$, and $\frac{1}{500}\sum_{i=1}^{n}(y_i-\bar{y})^2 = 2500$. She wants to estimate the following regression $y_i = \hat{\beta}_0 + \hat{\beta}_1x_i + e_i$
+- What is $\hat{\beta}_1$?
+- What is $\hat{\beta}_0$?
+
+
+
+$$
+\hat{\beta_1} = \frac{Cov(x_i,y_i)}{Var(x_i)} \\
+= \frac{\frac{1}{n-1}\sum_{i=1}^{n}(x_i-\bar{x})(y_i-\bar{y})}{\frac{1}{n-1}\sum_{i=1}^{n}(x_i-\bar{x})^2} \\
+\hat{\beta_0} = \bar{y} - \hat{\beta_1}\bar{x}
+$$
+
+```{r}
+x1 <- runif(100, min=0, max=20)
+beta1 <- -10
+beta0 <- 25000
+epsilon <- rnorm(10000,mean=0,sd=10000)
+y <- beta0+beta1*x1
+
+plot(x1,y,cex=0.5)
+
+```
+

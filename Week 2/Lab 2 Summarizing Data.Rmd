@@ -1,0 +1,398 @@
+---
+title: "Week 2: Summarizing Data"
+author: "Wenhao Jiang"
+institute: |
+           | Department of Sociology
+           | New York University
+date: September 17, 2022
+output: beamer_presentation
+classoption: "aspectratio=1610"
+theme: "default"
+outertheme: "miniframes"
+header-includes:
+  - \definecolor{nagivation}{rgb}{0,0,0.3}
+  - \definecolor{main}{rgb}{0,0,0.5}
+  - \setbeamercolor{section in head/foot}{bg=nagivation,fg=white}
+  - \usecolortheme[named=main]{structure}
+  - \setbeamertemplate{footline}[page number]
+  - \setbeamerfont{footnote}{size=\footnotesize}
+  - \setbeamerfont{caption}{size=\footnotesize}
+---
+
+# Data 
+
+## Data Structures
+
+- `R` also has a number of basic data *structures*. 
+- A data structure is either 
+    - homogeneous (all elements are of the same data type) 
+    - heterogeneous (elements can be of more than one data type).
+
+| Dimension | **Homogeneous** | **Heterogeneous** |
+|-----------|-----------------|-------------------|
+| 1         | Vector          | List              |
+| 2         | Matrix          | Data Frame        |
+| 3+        | Array           |                   |
+
+
+# Data frame
+
+## Data frame basics
+
+- A **data frame** is the **most** common way that we store and interact with data
+
+```{r}
+example_data <- data.frame(x = c(1, 3, 5, 7, 9, 1, 3, 5, 7, 9),
+                          y = c(rep("Hello", 9), "NYU"),
+                          z = rep(c(TRUE, FALSE), 5))
+```
+
+- A data frame is a collection of vertical vectors
+    - Each vector must contain the same data type
+    - The difference vectors can store different data types
+
+---
+
+```{r}
+example_data
+```
+
+---
+
+## Read data frame
+
+- In most cases, we do not deal with self-created data frames
+- Instead, we use external data (e.g., surveys) and import them to `R`/`RStudio`
+
+---
+
+## Read data frame
+
+- External data can be stored in different formats
+- One typical format is `.csv`
+- Read `.csv` file into R
+    - `read.csv()` function as default
+    - `read_csv()` function from the `readr` package. This is faster for larger data
+
+---
+
+## Read data frame
+
+- But before that, you should let `R` know where the file is located
+- In `R`, we call the **folder** that `R` currently is reading **the working directory** 
+- To see the current working directory, type in
+
+```{r}
+getwd()
+```
+
+---
+
+## Read data frame
+
+- If you want to re-set the working directory to the folder that you store the file you want to read, use `setwd()` function
+
+```{r, eval = FALSE}
+setwd()
+```
+
+- `RStudio` also allows a more "intelligent" way to reset the working directory
+
+```{r, message = FALSE, warning = FALSE}
+## set working directory
+setwd("~/Dropbox/Teaching/Week 2")
+
+## read the file
+gss <- read.csv("GSS_SOCUA_W2.csv")
+```
+
+---
+
+## Examine dataframe basics
+
+- To see the first n rows of the data
+```{r}
+head(gss, n=5)
+```
+
+--- 
+
+- To see the last n rows of the data
+```{r}
+tail(gss, n=5)
+```
+
+- To view the whole dataset
+```{r,eval=FALSE}
+View(gss)
+```
+
+- `View()` function generally not recommended, especially if the data is large
+
+--- 
+
+## Examine dataframe basics
+
+- To check the general "structure" of the data frame
+```{r}
+str(gss)
+```
+
+- `str()` will display the number of **observations** and **variables**, list the variables, give the type of each variable, and show some elements of each variable
+
+---
+
+## Examine dataframe basics
+
+-  `colnames()` function to obtain names of the variables in the dataset
+```{r}
+colnames(gss)
+```
+
+- To access one of the variables **as a vector**, we use the `$` operator
+```{r,eval=FALSE}
+gss$sibs
+```
+
+--- 
+
+- We can use `min()` or `max()` to inspect the miminum and maximum value of the variable
+```{r}
+min(gss$sibs)
+max(gss$sibs)
+```
+
+- We can use `unique()` to inspect the unique values of the variable
+```{r}
+unique(gss$marital)
+```
+
+- You can quickly spot some unusual observartions. Deal with them carefully!
+
+---
+
+- We can use the `dim()`, `nrow()` and `ncol()` functions to obtain information about the dimension of the data frame
+
+```{r}
+dim(gss)
+nrow(gss)
+ncol(gss)
+```
+
+## Subsetting data
+
+- Subsetting data frames can work much like subsetting matrices using square brackets, `[,]`. 
+- But instead of using column indexes, we use column names
+- We can select a single column by
+
+```{r,eval=FALSE}
+gss[gss$year > 2018, "marital"]
+```
+
+---
+
+- We can also select multiple columns by creating a vector for column names
+```{r,eval=FALSE}
+gss[gss$year > 2018, c("marital","year")]
+```
+
+---
+
+## Package dplyr
+
+- To subset data, another approach specifically designed for data frames is calling the `filter` and `select` functions from the `dplyr` package
+- `select` function selects certain **columns**
+- `filter` function filters certain **rows** (or **observations**) based on some conditions
+
+```{r, eval = FALSE}
+library(dplyr)
+gss %>% 
+  filter(year>2018) %>% 
+  select(marital,sibs,age,sex)
+```
+
+# Summarize Data
+
+---
+
+## Mean, Median, Variance
+
+- To calculate mean, median, and variance, `R` uses functions
+
+```{r}
+mean(gss$sibs)
+median(gss$sibs)
+var(gss$sibs)
+```
+
+---
+
+- Note that the denominator of variance is `n-1` by default in `R`
+$var(x) = \frac{1}{n-1}\sum_{i=1}^{n}(x_i-\bar{x})^2$
+
+```{r}
+var(c(1,2,3))
+```
+
+---
+
+## Combine data subsetting and summarizing (base R)
+
+- Some values in the variable `sibs` are not real observations
+- Negative values are missingness
+- How do we calculate the mean value of `sibs` without negative `sibs` values? \pause
+
+```{r}
+mean(gss[gss$sibs>=0,"sibs"])
+```
+
+---
+
+## Exercise
+
+- How do we calculate the variance of `sibs` in year 2018 only?
+
+---
+
+## Combine data subsetting and summarizing (dplyr)
+
+- We can also use `dplyr` to subset and summarize data
+- How do we calculate the mean value of `sibs` without negative `sibs` values?
+
+```{r,message=FALSE}
+library(dplyr)
+gss %>% filter(sibs>0) %>% summarize(sibs_mean = mean(sibs))
+```
+
+- `summarize()` follows the format: `summarize(your_summarize_name = function(variable))`
+
+---
+
+## Histogram plot
+
+- Histograms describe the distribution of **numeric** data
+
+```{r, fig.height=3, fig.width=3, eval=FALSE}
+hist(gss$age)
+```
+
+```{r, fig.height=3, fig.width=3, echo=FALSE, fig.align="center"}
+hist(gss$age, cex.lab=0.5, cex.axis=0.5, cex.main=0.5, cex.sub=0.5)
+```
+
+---
+
+- Again, we want to drop negative values of `age`
+- We may also want to see the distribution for some years but not others
+
+```{r, fig.height=3, fig.width=3, eval=FALSE}
+hist(gss[gss$age>0 & gss$year<=2018 & gss$year>=2012,"age"])
+```
+
+```{r, fig.height=3, fig.width=3, echo=FALSE, fig.align="center"}
+hist(gss[gss$age>0 & gss$year<=2018 & gss$year>=2012,"age"],
+     cex.lab=0.5, cex.axis=0.5, cex.main=0.5, cex.sub=0.5)
+```
+
+---
+
+- To change plot titles and x-axis label
+
+```{r, fig.height=3, fig.width=3, eval=FALSE}
+hist(gss[gss$age>0 & gss$year<=2018 & gss$year>=2012,"age"],
+     main = "Distribution of Respondents Ages in 2012-2018, GSS", 
+     xlab = "Age")
+```
+
+```{r, fig.height=3, fig.width=3, echo=FALSE, fig.align="center"}
+hist(gss[gss$age>0 & gss$year<=2018 & gss$year>=2012,"age"],
+     main = "Distribution of Respondents Ages in 2012-2018, GSS", 
+     xlab = "Age",
+     cex.lab=0.5, cex.axis=0.5, cex.main=0.5, cex.sub=0.5)
+```
+
+---
+
+- To control the number of `bins`
+
+\small
+
+```{r, fig.height=3, fig.width=3, eval=FALSE}
+hist(gss[gss$age>0 & gss$year<=2018 & gss$year>=2012,"age"],
+     main = "Distribution of Respondents Ages in 2012-2018, GSS",
+     xlab = "Age",
+     breaks = 30)
+```
+
+```{r, fig.height=3, fig.width=3, echo=FALSE, fig.align="center"}
+hist(gss[gss$age>0 & gss$year<=2018 & gss$year>=2012,"age"],
+     main = "Distribution of Respondents Ages in 2012-2018, GSS", xlab = "Age",
+     cex.lab=0.5, cex.axis=0.5, cex.main=0.5, cex.sub=0.5,
+     breaks = 30)
+```
+
+---
+
+## Barplot
+
+- Barplots describe the distribution of **categorical** data
+
+```{r, fig.height=3, fig.width=3, fig.align="center"}
+## create a count summary in each category by function `table`
+counts <- table(gss[gss$age>0 & gss$year<=2018 &
+           gss$year>=2012 & gss$marital>=0, "marital"])
+counts
+```
+
+---
+
+\small
+
+```{r, fig.height=3, fig.width=3, fig.align="center"}
+barplot(counts, main="Distribution of Marital Status in 2012-2018, GSS",
+   xlab="Marital Status",
+   names.arg=c("Married", "Widowed", "Divorced", "Separated", 
+               "Never Married"),
+   cex.lab=0.5, cex.axis=0.5, cex.main=0.5, cex.sub=0.5, cex.names=0.32)
+```
+
+--- 
+
+- We can also change the order of the categories by first `factorizing` the variable with manual `levels`
+
+```{r}
+gss$marital <- factor(gss$marital,levels = c(1,3,4,2,5))
+counts <- table(gss[gss$age>0 & gss$year<=2018 &
+           gss$year>=2012, "marital"])
+```
+
+---
+
+\small
+
+```{r, fig.height=3, fig.width=3, fig.align="center"}
+barplot(counts, main="Distribution of Marital Status in 2012-2018, GSS",
+   xlab="Marital Status",
+   names.arg=c("Married", "Divorced", "Separated", "Widowed", "Never Married"),
+   cex.lab=0.5, cex.axis=0.5, cex.main=0.5, cex.sub=0.5, cex.names=0.35)
+```
+
+---
+
+## Export the data
+
+- `write.csv` save (or export) the dataframe in `.csv` format.
+
+```{r, eval=FALSE}
+write.csv(gss, "cleaned_gss.csv")
+```
+
+---
+
+- We will cover more advanced data summarization next week, including how we can summarize data by group
+- We will also cover package `ggplot2` next week, a powerful and more flexible tool in data visualization, including what we introduced today
+
+---
+
+- Any questions from textbook or lectures?
+

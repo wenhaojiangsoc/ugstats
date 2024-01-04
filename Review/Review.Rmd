@@ -1,0 +1,350 @@
+---
+title: "Review for Quiz II"
+author: "Wenhao Jiang"
+institute: |
+           | Department of Sociology
+           | New York University
+date: October 13, 2022
+output: beamer_presentation
+classoption: "aspectratio=1610"
+theme: "default"
+outertheme: "miniframes"
+header-includes:
+  - \definecolor{nagivation}{rgb}{0,0,0.3}
+  - \definecolor{main}{rgb}{0,0,0.5}
+  - \setbeamercolor{section in head/foot}{bg=nagivation,fg=white}
+  - \usecolortheme[named=main]{structure}
+  - \setbeamertemplate{footline}[page number]
+  - \setbeamerfont{footnote}{size=\footnotesize}
+  - \setbeamerfont{caption}{size=\footnotesize}
+---
+
+# Point Estimate
+
+## Parameters and Estimates
+
+- A **population parameter** describes characteristics of the population ($p$ or $\mu$), which we never observe.
+- We use a point **estimate** ($\hat{p}$ or $\hat{\mu}$). calculate using the sample, to estimate the population parameter.
+
+---
+
+## Estimates Uncertainty
+
+- The point **estimate** always includes uncertainty.
+- When we draw random samples from the population for a large number of times, the histogram of the sample estimates (e.g., $\hat{p}$s) will be normally distributed. The histogram is the **sampling distribution**. \pause
+
+---
+
+## Estimates Uncertainty
+
+```{r,message=FALSE,echo=FALSE}
+## create population, 1 means support, 0 means oppose to legal abortion
+population <- c(rep(0,4800000),rep(1,5200000))
+
+## empty vector to store means of sample (K times)
+mean_of_sample <- c()
+
+## iterate the process of 3000 times
+for (i in 1:3000){
+  ## sample with n=1000
+  sample <- sample(population,1000)
+  mean <- mean(sample)
+  mean_of_sample <- c(mean_of_sample,mean)
+}
+```
+
+```{r,message=FALSE,fig.height=3, fig.width=3, fig.align="center",echo=FALSE}
+
+## plot histogram
+hist(mean_of_sample,breaks=20,
+     main="Distribution of Sample Proportions",
+     xlab="Sample Proportion",
+     cex.lab=0.5, cex.axis=0.5, cex.main=0.5, cex.sub=0.5)
+```
+
+---
+
+## Exercise
+
+- The statement is True or False?
+  - In real world, we can normally observe the sampling distribution and see if it's a normal distribution.
+
+---
+
+## Estimates Uncertainty
+
+- The normal distribution of the sample proportions (or other sample statistics) are characterized by two important features
+  - 1. The sampling distribution is centered around the **population parameter**
+
+```{r,message=FALSE,fig.height=2.8, fig.width=2.8, fig.align="center",echo=FALSE}
+## plot histogram
+hist(mean_of_sample,breaks=20, main="Distribution of Sample Proportions", xlab="Sample Proportion",
+     cex.lab=0.5, cex.axis=0.5, cex.main=0.5, cex.sub=0.5)
+abline(v=mean(mean_of_sample),col="blue",lwd=2)
+```
+
+---
+
+## Estimates Uncertainty
+
+- The normal distribution of the sample proportions (or other sample statistics) are characterized by two important features
+  - 2. The standard deviation of the sample proportions depends on the population parameter $p$ and sample size $n$ \pause
+  - $SE_{\hat{p}} = \sqrt{\frac{p(1-p)}{n}}$ \pause
+  - We also call it **standard error** of $\hat{p}$ \pause
+  - We do not observe $p$, so we use $\hat{p}$ to estimate $SE_{\hat{p}} = \sqrt{\frac{\hat{p}(1-\hat{p})}{n}}$
+
+---
+
+## Exercise
+
+- The statement is True or False?
+  - As the number of observations in a sample increases, the distribution of its values approaches normality. \pause
+  - As the number of observations in a sample increases, the (sampling) distribution of its sample means approaches normality. 
+
+---
+
+## Exercise
+
+- In the US, a non-trivial proportion of individuals believe in god. Suppose there are only two types of people in the US population---theists and atheists. A social scientist wants to estimate the proportion of theists in the country. To do so, she samples 1225 individuals randomly from the population, and find that 639 believe in god.
+- What is the point estimate?
+  - 639/1225 =  0.52
+- What is the SE of the point estimate? \pause
+  - $\sqrt{\frac{0.52*(1-0.52)}{1225}} = 0.014$
+
+---
+
+## Estimates Uncertainty
+
+- In the normal distribution of sample means, $95\%$ of the $\hat{p}$s will fall into
+
+```{r,message=FALSE,fig.height=3, fig.width=3, fig.align="center",echo=FALSE}
+## plot histogram
+hist(mean_of_sample,breaks=20, main="Distribution of Sample Proportions", xlab="Sample Proportion",
+     cex.lab=0.5, cex.axis=0.5, cex.main=0.5, cex.sub=0.5)
+abline(v=quantile(mean_of_sample,0.025),col="blue",lwd=2)
+abline(v=quantile(mean_of_sample,0.975),col="blue",lwd=2)
+```
+
+--- 
+
+## Estimates Uncertainty
+
+- In the normal distribution of sample proportions, $95\%$ of the $\hat{p}$s will fall into
+- $p - 1.96 \times SE_{\hat{p}} \le \hat{p} \le p + 1.96 \times SE_{\hat{p}}$ \pause
+- Equivalently, $\hat{p} - 1.96 \times SE_{\hat{p}} \le p \le \hat{p} + 1.96 \times SE_{\hat{p}}$ \pause
+- This is the $95\%$ **Confidence Interval** for the population $p$
+
+--- 
+
+## Estimates Uncertainty
+
+- We can adjust the $95\%$ confidence interval to e.g., $99\%$ confidence interval. Now, we want an interval where $99\%$ of the $\hat{p}$s fall into
+
+```{r,message=FALSE,fig.height=3, fig.width=3, fig.align="center",echo=FALSE}
+## plot histogram
+hist(mean_of_sample,breaks=20, main="Distribution of Sample Proportions", xlab="Sample Proportion",
+     cex.lab=0.5, cex.axis=0.5, cex.main=0.5, cex.sub=0.5)
+abline(v=quantile(mean_of_sample,0.025),col="blue",lwd=1)
+abline(v=quantile(mean_of_sample,0.975),col="blue",lwd=1)
+abline(v=quantile(mean_of_sample,0.005),col="red",lwd=2)
+abline(v=quantile(mean_of_sample,0.995),col="red",lwd=2)
+```
+
+---
+
+## Estimates Uncertainty
+
+- Looking at the z-score table
+- $p - 2.575 \times SE_{\hat{p}} \le \hat{p} \le p + 2.575 \times SE_{\hat{p}}$ \pause
+- Equivalently, $\hat{p} - 2.575 \times SE_{\hat{p}} \le p \le \hat{p} + 2.575 \times SE_{\hat{p}}$ \pause
+- This is the $99\%$ **Confidence Interval** for the population $p$ 
+
+--- 
+
+## Estimates Uncertainty
+
+- We call $1.96 \times SE_{\hat{p}}$ or $2.575 \times SE_{\hat{p}}$ the **Margin of Error** \pause
+- The statement is True or False?
+  - At the same level of confidence (e.g., $95\%$), the width of the Confidence Interval is equal to twice of the Margin of Error 
+  
+---
+
+## Exercise
+
+- A researcher estimated a population parameter $p$ by two samples, with sample size $n_1$ and $n_2$. She constructed $95\%$ Confidence Interval for sample 1, and $99\%$ CI for sample 2. She found that the width of the two CIs are the same.
+- What is the relation between $n_1$ and $n_2$?
+  - A. $n_1 > n_2$
+  - B. $n_1 = n_2$
+  - C. $n_1 < n_2$
+  - D. Insufficient information
+
+---
+
+## Estimates Uncertainty
+
+- Note that the special formula $SE_{\hat{p}} = \sqrt{\frac{p(1-p)}{n}}$ only applies to the point estimate of **proportion**.
+When the point estimate is about mean (e.g., mean income of a sample),
+  - $SE_{\hat{\mu}} = \sqrt{\frac{var(Y)}{n}}$, where $var(Y)$ represent the variance of the population \pause
+  - We do not observe $var(Y)$, so we use sample variance $\hat{var}(Y)$ to estimate $SE_{\hat{\mu}} = \sqrt{\frac{\hat{var}(Y)}{n}}$
+
+---
+
+## Exercise
+
+- A fisherman wants to know the mean weight of fish in his fish pond. Knowing that he cannot drain the pond and weigh all fish in a single time, he randomly catches 63 fish, finding that the mean weight of the fish he caught is 21 lbs, and the standard deviation is 2.6 lbs. 
+- What is the point estimate? \pause
+- What is the SE of the point estimate?
+  - $SE_{\hat{\mu}} = \sqrt{\frac{2.6^2}{63}} = 0.33$
+  
+# Difference b/w two Samples
+
+---
+
+## Difference between two proportions
+
+- Suppose the proportion of men in the population supporting abortion is $p_m$, the proportion of women in the population supporting abortion is $p_w$, and the difference is $p_m-p_w$ \pause
+- We draw a random sample from the population with $n_m$ men and $n_w$ women ($n_m+n_w$ in total). 
+- We get point estimates $\hat{p}_m$, $\hat{p}_w$, and $\hat{p}_m - \hat{p}_w$ \pause
+- What is the standard error of $\hat{p}_m - \hat{p}_w$?
+  - $SE_{\hat{p}_m - \hat{p}_w} = \sqrt{\frac{p_m(1-p_m)}{n_m} + \frac{p_w(1-p_w)}{n_w}}$, and we estimate it using $SE_{\hat{p}_m - \hat{p}_w} = \sqrt{\frac{\hat{p}_m(1-\hat{p}_m)}{n_m} + \frac{\hat{p}_w(1-\hat{p}_w)}{n_w}}$
+  
+---
+
+## Exercise
+
+- The statement is True or False?
+- When we sample from the population for many times and plot the histograms of $\hat{p}_m$, $\hat{p}_w$, and $\hat{p}_m - \hat{p}_w$ calculated from each sample, we will find that $\hat{p}_m$ and $\hat{p}_w$ form bell curves (normal distribution), but $\hat{p}_m - \hat{p}_w$ does not.
+
+---
+
+## Exercise
+
+- To study the gender difference in parental leave, a sociologist surveys 128 men and 254 women with children, finding that $11\%$ men have taken paternity leave, while $65\%$ women have.
+- What is the point estimate of the gender difference in parental leave? (i.e., what is the proportion difference?) \pause
+  - $0.65 - 0.11 = 0.54$ \pause
+- What is the SE of the point estimate? \pause
+  - $\sqrt{\frac{0.11*(1-0.11)}{128}+\frac{0.65*(1-0.65)}{254}} = 0.04$
+
+---
+
+## Difference between two Sample Proportions - A Special Case
+
+- What is the standard error of $\hat{p}_m - \hat{p}_w$ **under the null hypothesis** $H_0: p_m = p_w = p$?
+- In this **special case** of null hypothesis $H_0: p_m = p_w = p$, we will replace $p_m$ and $p_w$ by a uniform $p$.
+- $SE_{\hat{p}_m - \hat{p}_w} = \sqrt{\frac{p(1-p)}{n_m} + \frac{p(1-p)}{n_w}}$ \pause
+- We do not observe $p$. We estimate $p$ using the sample we drew. 
+- We denote this $\hat{p}$ in the case as $\hat{p}_{pooled}$, and $\hat{p}_{pooled} = \frac{\hat{p}_m \times n_m + \hat{p}_w \times n_w}{n_m + n_w}$ \pause
+- $SE_{\hat{p}_m - \hat{p}_w} = \sqrt{\frac{\hat{p}_{pooled}(1-\hat{p}_{pooled})}{n_m} + \frac{\hat{p}_{pooled}(1-\hat{p}_{pooled})}{n_w}}$
+
+---
+
+## Difference between two Sample Means
+
+- In many cases, instead of proportion, we are interested in the mean values of two populations and their difference. \pause
+- For example, $\mu_1$ could be mean hours worked among men in household production and $\mu_2$ could be mean hours worked among women. We want to know $\mu_1 - \mu_2$ \pause
+- We never observe it at the population level. Instead, we gauge it using a male sample and a female sample. The point estimate for the difference of the two sample means is $\bar{Y_1} - \bar{Y_2}$
+
+---
+
+## Difference between two Sample Means
+
+- The standard error of the point estimate $\bar{Y_1} - \bar{Y_2}$, $SE_{\bar{Y_1} - \bar{Y_2}} = \sqrt{\frac{(\sigma_1)^2}{n_1} + \frac{(\sigma_2)^2}{n_2}}$
+- $\sigma_1$ is the standard deviation of population 1 (e.g., standard deviation of hours worked of the male population), and $\sigma_2$ is the standard deviation of population 2 (e.g., standard deviation of hours worked of the female population) \pause
+- We never observe $\sigma_1$ and $\sigma_2$ \pause
+- We estimate it by $SE_{\bar{Y_1} - \bar{Y_2}} = \sqrt{\frac{(s_1)^2}{n_1} + \frac{(s_2)^2}{n_2}}$
+- $s_1$ is the standard deviation of sample 1 (e.g., standard deviation of hours worked of the male sample), and $s_2$ is the standard deviation of sample 2 (e.g., standard deviation of hours worked of the female sample)
+
+---
+
+## Exercise
+
+| Gender      | Sample size | Mean of hours | Std Dev |
+|-------------|-------------|---------------|---------|
+| Men         | 250         | 1.8           | 0.2     |
+| Women       | 300         | 4.5           | 0.3     |
+
+- What is the point estimate of the gender difference in mean of hours? \pause
+  - $\bar{Y}_1-\bar{Y}_2=4.5-1.8=2.7$ \pause
+- What is $SE_{\bar{Y}_1-\bar{Y}_2}$? \pause
+  - $SE_{\bar{Y}_1-\bar{Y}_2} = \sqrt{\frac{(s_1)^2}{n_1} + \frac{(s_2)^2}{n_2}} = \sqrt{\frac{0.2^2}{250}+\frac{0.3^2}{300}} = 0.02$ \pause
+- What is the $95\%$ Confidence Interval of $Y_1-Y_2$? \pause
+  - $\bar{Y}_1-\bar{Y}_2 - 1.96 \times SE_{\bar{Y}_1-\bar{Y}_2} \le Y_1-Y_2 \le \bar{Y}_1-\bar{Y}_2 + 1.96 \times SE_{\bar{Y}_1-\bar{Y}_2}$, i.e., $2.66 \le Y_1-Y_2 \le 2.74$
+
+# Hypothesis Testing
+
+---
+
+## Terminology
+
+- The **null hypothesis** $H_0$ often states "nothing is going on here"
+- The **alternative hypothesis** $H_A$ represents what we really think is going on---a substantive alternative to the null \pause
+- For example, we want to know the gender difference in the hours devoted to housework
+  - $H_0$: there is no gender difference **in the population**
+  - $H_A$: there is gender difference **in the population**
+  
+---
+
+## Terminology
+
+- We use a sample to estimate a population property, and decide whether to reject $H_0$ or not.
+- Point estimate always involves uncertainties, so one may falsely reject the null hypothesis or fail to reject the null hypothesis
+
+| Truth         | Do not reject $H_0$ | Reject $H_0$ in favor of $H_A$  |
+|---------------|---------------------|---------------------------------|
+| $H_0$ is true | Right decision      | Type 1 error                    |
+| $H_A$ is true | Type 2 error        | Right decision                  | 
+
+---
+
+## Hypothesis Testing
+
+- Hypothesis testing focuses on $H_0$ and the probability of **Type 1 error** \pause
+- In a more plain language, it means that, **given that the null hypothesis is true**, what is the probability of getting the test statistics.
+  - E.g., if $H_0$: there is no gender differences in yearly income, yet we observe from our sample that $\bar{Y}_1 - \bar{Y}_2 = 10,000$, it is reasonable to speculate that $H_0$ is incorrect (i.e., we reject $H_0$ and accept $H_A$: there are gender differences in yearly income at the level of population). \pause
+  - The lower the probability, the less likely the null hypothesis is true.
+  - The higher the probability, the more likely the null hypothesis is true. \pause
+- How low should this probability to be, such that we are "confident" enough to reject the null hypothesis? \pause
+  - This is called **Significance level** $(\alpha)$, usually pre-set at 0.05 ($5\%$). When the probability is lower than 0.05, we are confident to reject the null hypothesis.
+  
+---
+
+## Hypothesis Testing
+
+- What does it mean to say, when the probability is lower than 0.05, we are confident to reject the null hypothesis? \pause
+- We sample many times ($K$ times) from the population, assuming that there is no gender difference in yearly income. In $95\%$ of the $K$ point estimates, $\bar{Y}_1 - \bar{Y}_2$ falls within $[lower \: bar, higher  \: bar]$, e.g., $[-1000,1000]$
+- The point estimate of the single sample that we draw, however, reports that $\bar{Y}_1 - \bar{Y}_2 = 10,000$. This is very different from 0 and the times of getting $\bar{Y}_1 - \bar{Y}_2 = 10,000$ are much smaller than $0.05K$. We therefore reject $H_0$ at the Significance level $\alpha=0.05$.
+
+---
+
+## Hypothesis Testing
+
+- How do we calculate the probability of getting the sample statistics, given the null hypothesis?
+- This is where $z$-score, the $z$-score table, and $p$-value step in \pause
+- Suppose we are interested in the gender difference in yearly income. We sample 1200 men and 1000 women, finding that $\bar{Y}_{men} = 50000$ and $\bar{Y}_{women} = 49000$. We also find that $s_{men} = 8000$ and $s_{women}=7000$ \pause
+  - 0. Calculate the point estimate $\bar{Y}_{men} - \bar{Y}_{women} = 50000-49000=1000$, and $SE_{\bar{Y}_{men}-\bar{Y}_{women}} = \sqrt{\frac{8000^2}{1200} + \frac{7000^2}{1000}} = 319.9$ \pause
+  - 1. Look at the null hypothesis. In this case, $H_0$: $\bar{Y}_{men}-\bar{Y}_{women} = 0$. \pause
+  - 2. Calculate the $z$-score: $z = \frac{point \: estimate - null\:value}{SE} = \frac{\bar{Y}_{men} - \bar{Y}_{women} - 0}{SE_{\bar{Y}_{men}-\bar{Y}_{women}}} = \frac{1000}{319.9} = 3.13$ \pause
+  - 3. Check the $p$-value associated with the $z$-score. We find 0.0009, meaning that if there is no gender difference in the population, the chance that we get the above sample statistics is 0.0009. \pause
+  - 4. Note that to get a difference of 1000, it is also possible that women's income lead men's. The possibility to get such a deviation (1000) given the null hypothesis $Y_{men}=Y_{women}$ is therefore $0.0009 \times 2 = 0.0018$. This is the $p$-value = $0.0018$. \pause
+  
+---
+
+## Hypothesis Testing
+
+- $p$-value = $0.0018$ is smaller than $\alpha=0.05$. We reject the null hypothesis at the 0.05 significance level.
+- Equivalently, the $95\%$ confidence interval of $Y_{men} - Y_{women}$ does not contain 1000 under the null hypothesis. 
+
+---
+
+## Exercise
+
+- Different countries in the world have different sex ratios at birth. A scholar wants to know whether country C has a skewed sex ratio at birth or not. He samples 1200 infants from the country and finds that $53\%$ of the infants in the sample are boys and $47\%$ are girls.
+- What is the null hypothesis? \pause
+- What is the point estimate of the boy proportion? \pause
+- What is the SE of the point estimate? \pause
+- What is the $z$-score of the point estimate under the null hypothesis? \pause
+- What is the $p$-value associated with the $z$-score? \pause
+- Can we reject the null hypothesis at $\alpha=0.01$? \pause
+- Does the $95\%$ confidence interval of $p$ under the null hypothesis include $\hat{p}$? What about $99\%$ CI?
+  
+

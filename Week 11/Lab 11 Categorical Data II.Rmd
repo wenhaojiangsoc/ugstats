@@ -1,0 +1,586 @@
+---
+title: "Week 11: Categorical Data II"
+author: "Wenhao Jiang"
+institute: |
+           | Department of Sociology
+           | New York University
+date: November 18, 2022
+output: beamer_presentation
+classoption: "aspectratio=1610"
+theme: "default"
+outertheme: "miniframes"
+header-includes:
+  - \definecolor{nagivation}{rgb}{0,0,0.3}
+  - \definecolor{main}{rgb}{0,0,0.5}
+  - \setbeamercolor{section in head/foot}{bg=nagivation,fg=white}
+  - \usecolortheme[named=main]{structure}
+  - \setbeamertemplate{footline}[page number]
+  - \setbeamerfont{footnote}{size=\footnotesize}
+  - \setbeamerfont{caption}{size=\footnotesize}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(dplyr)
+library(ggplot2)
+```
+
+# Categorical Data as Explanatory Variables
+
+## Categorical Data as Explanatory Variable
+
+- We have already learned how to deal with the case when a binary variable like gender is used as a explanatory (independent) variable
+- In this case, gender is also a categorical variable, with two possible values
+  - In recent years, large national surveys now include more categories in asking gender \pause
+- We include gender in regression by transforming it into a 0-1 binary, where 1 represents woman, and 0 man (or 1 as man and 0 as woman)
+- $Abscale_i = \hat{\beta}_0 + \hat{\beta}_1edu_i + \hat{\beta}_2women_i + e_i$
+- How do intepret $\hat{\beta}_2$ (suppose this is a positive number)? \pause
+- Conditioning on the same level of education, women on average have $\hat{\beta}_2$-unit higher levels abortion attitudes than men do
+
+---
+
+## Categorical Data as Explanatory Variable
+
+- $Abscale_i = \hat{\beta}_0 + \hat{\beta}_1edu_i + \hat{\beta}_2women_i + e_i$
+- Men do not explicitly appear in regression; instead, it appears as the **reference group** for women to be compared with \pause
+- Including a categorical variable that has multiple variables (e.g., race, region, marital status) is analogous
+- For example, if we want to add race (5 categories: White, Black, Hispanic, Asian, Others) in the above equation
+- It is incorrect to directly specify $Abscale_i = \hat{\beta}_0 + \hat{\beta}_1edu_i + \hat{\beta}_2women_i + \hat{\beta}_3race_i + e_i$
+- As race is not ordered and additive
+
+---
+
+## Categorical Data as Explanatory Variable
+
+- Instead, we transform race into 5 "dummy variables" (dummy means a binary variable created from categorical variables), `white`, `black`, `hispanic`, `asian`, `others`
+- If the respondent is a black, $black = 1$ and other other dummy variables $=0$
+- If the respondent is a hispanic, $hispanic = 1$ and other other dummy variables $=0$ \pause
+- We put all these dummy variables but one group in regression; the group that is omitted serves as the **reference** group
+- $Abscale_i = \hat{\beta}_0 + \hat{\beta}_1edu_i + \hat{\beta}_2women_i + \hat{\beta}_3black_i +  \hat{\beta}_4hispanic_i + \hat{\beta}_5asian_i + \hat{\beta}_6others_i + e_i$ \pause
+- Which group to omit is up to you, but it is related to the interpretation of the results
+
+---
+
+## Categorical Data as Explanatory Variable
+
+- $Abscale_i = \hat{\beta}_0 + \hat{\beta}_1edu_i + \hat{\beta}_2women_i + \hat{\beta}_3black_i +  \hat{\beta}_4hispanic_i + \hat{\beta}_5asian_i + \hat{\beta}_6others_i + e_i$
+- How do we interpret $\hat{\beta}_3$ (suppose this is a positive number)? \pause
+- Conditioning on the same level of education and gender, blacks on average have $\hat{\beta}_3$-unit higher levels of abortion attitudes than whites do
+- Whites do not explicitly appear in regression; instead, it appears as the **reference group** for other racial groups to be compared with
+
+---
+
+## Practice
+
+- We are now interested in the association between marital status and religious identification, controlling for gender and education
+- There are five categories of marital status, Married, Widowed, Divorced, Separated, Never married 
+
+---
+
+## Practice
+
+- $Relig_i = 2.56 + 0.013edu_i + (-0.094)women_i + (-0.355)widowed_i + 0.139divorced_i + 0.376separated + 0.635nevmar_i + e_i$
+
+\footnotesize
+
+```{r,message=FALSE, fig.height=2.5, fig.width=4, fig.align="center", echo=FALSE, warning=FALSE,results="asis"}
+library(stargazer)
+
+## set your working directory - you should set your own unique one!
+setwd("~/Dropbox/Teaching/SOCUA-302/Week 11")
+
+## read csv data - this is 2021 GSS data
+gss <- read.csv("GSS_SOCUA_W11.csv")
+gss <- gss %>%
+  mutate(relig=ifelse(relig==4,0,1))
+
+## specify model
+model4 <- lm(relig~educ+sex+factor(marital),gss)
+stargazer(model4, out = "text",
+          header=FALSE,
+          title = "The association between education, sex, marital status and religion, GSS 2021",
+          digits = 3,
+          single.row = T,
+          covariate.labels = c("Education","Women","Widowed","Divorced","Separated","Never married","Intercept"),
+          dep.var.labels  = "Religious identification",
+          omit.stat = c("rsq","f","ser"))
+```
+
+
+# Data Memo and R Operations
+
+## Logistics
+
+- Research Memo: 5-page memo presenting an interesting statistical result and discussing its social science implications
+- Due **16 December**
+
+---
+
+## General Expectations
+
+- Not required to go very advanced and substantively innovative (but encouraged!), but we generally expect to see 
+- (1) An introduction with some literature review
+  - A clear-defined topic (e.g., what is the association between education and gender ideologies/attitudes)
+- (2) A brief description of the data you intend to use  
+  - For example, if you want to use GSS, you may describe which year of data you use, how many individuals are included, what is their gender and race composition, etc.
+  
+---
+
+## General Expectations
+
+- (3) Clear-stated dependent (e.g., gender ideologies) and independent (years of education) variables
+- (4) Start with a two-way cross-table
+- (5) Proceed to a bivariate regression
+- (6) Adding a set of other controlling variables in a multivariate regression setting, such as gender, age, and region
+  - Try to test for interactions. For example, does the effect of years of education in gender ideologies depend on which gender the respondent is?
+  - Or, is the variable a mediator, a moderator, or a multiple cause?
+- (7) Visualize the relationship, possibly after step (3) and step (6)  
+- (8) Conclusion and implications
+
+---
+
+## Logistics
+
+- It is almost certain that you will encounter difficulties in cleaning the data
+- Come to my office hour and I can help!
+
+## Data Sources
+
+- [General Social Survey](https://gssdataexplorer.norc.org/home) 
+- [Current Population Survey](https://cps.ipums.org/cps/index.shtml) 
+- [American Community Survey](https://usa.ipums.org/usa/)
+- [American Decennial Census](https://usa.ipums.org/usa/) 
+- [American Time Use Survey](https://timeuse.ipums.org/) 
+- [National Longitudinal Survey of Youth 1979 and 1997](https://www.nlsinfo.org/investigator/pages/login)
+
+---
+
+## Read Data
+
+```{r,warning=FALSE}
+## set your working directory - you should set your own unique one!
+setwd("~/Dropbox/Teaching/SOCUA-302/Week 11")
+
+## read csv data - this is 2021 GSS data
+gss <- read.csv("GSS_SOCUA_W11.csv")
+```
+
+---
+
+## Cross Table
+
+- The frequency of men and women who have and have no religious identification
+
+\footnotesize
+
+```{r}
+## recode religion
+gss <- gss %>%
+  mutate(relig=ifelse(relig==4,0,1))
+
+## cross table
+source("http://pcwww.liv.ac.uk/~william/R/crosstab.r")
+crosstab(gss, row.vars = "sex", 
+         col.vars = "relig", 
+         type = "f") ## "f" represents frequency
+```
+
+---
+
+## Cross Table
+
+- The proportion of people who have and have no religious identification among men and women
+
+```{r}
+## cross table
+crosstab(gss, row.vars = "sex", 
+         col.vars = "relig", 
+         type = "r") ## "r" represents row-wise proportion 
+```
+
+---
+
+## Cross Table
+
+- The `crosstab` function by default returns proportion by row
+- We can also change it to column-wise proportion
+- The proportion of men and women among the people who have and have no religious identification
+
+```{r}
+## cross table
+crosstab(gss, row.vars = "sex", 
+         col.vars = "relig", 
+         type = "c") ## "c" represents column-wise proportion
+```
+
+---
+
+## Cross Table
+
+\footnotesize 
+
+- We can also include multiple categories as rows
+
+```{r}
+## cross table
+crosstab(gss, row.vars = c("marital","sex"), 
+         col.vars = "relig", 
+         type = "r")
+```
+
+- Women who are widowed have the highest proportion of religious believers among all categories.
+
+---
+
+## Cross Table
+
+- The proportion can also be joint percentages
+
+```{r,eval=FALSE}
+## cross table
+crosstab(gss, row.vars = c("marital","sex"), 
+         col.vars = "relig", 
+         type = "j")
+```
+
+---
+
+\footnotesize 
+
+```{r,echo=FALSE}
+## cross table
+crosstab(gss, row.vars = c("marital","sex"), 
+         col.vars = "relig", 
+         type = "j")
+```
+
+---
+
+- Although the function `crosstab` is user-written, it is pretty flexible
+- Take a look at the original instructions [here](http://rstudio-pubs-static.s3.amazonaws.com/6975_c4943349b6174f448104a5513fed59a9.html) if you want more ways of cross-tabulation to explore the data
+
+---
+
+## Regression
+
+- The basic format of regression in `R` is `lm(y ~ x1 + x2 + ... xn, data)`
+- Save the regression model by some name, e.g., `model1 <- lm(y ~ x1 + x2 + ... xn, data)`
+- You can check the regression output by `summary(model1)` \pause
+- There is a more elegant way to present results by calling `stargazer()`
+
+\footnotesize 
+
+```{r,message=FALSE, fig.height=2.5, fig.width=4, fig.align="center", eval=FALSE, warning=FALSE, results="asis"}
+library(stargazer)
+model1 <- lm(relig~educ,gss)
+stargazer(model1, type = "text",
+          header=FALSE,
+          title = "The association between education and religious identification",
+          digits = 3,
+          omit.stat = c("rsq","f","ser"))
+```
+
+---
+
+## Regression
+
+\footnotesize 
+
+```{r,message=FALSE, fig.height=2.5, fig.width=4, fig.align="center",echo=FALSE, warning=FALSE, results="asis"}
+library(stargazer)
+model1 <- lm(relig~educ,gss)
+stargazer(model1, out = "text",
+          header=FALSE,
+          title = "The association between education and religious identification",
+          digits = 3,
+          omit.stat = c("rsq","f","ser"))
+```
+
+---
+
+## Regression
+
+- There is a more elegant way to present results by calling `stargazer()`
+- `stargazer()` can present multiple results of regressions
+
+\footnotesize
+
+```{r,message=FALSE, fig.height=2.5, fig.width=4, fig.align="center", eval=FALSE, warning=FALSE, results="asis"}
+model1 <- lm(relig~educ,gss)
+model2 <- lm(relig~educ+sex,gss)
+stargazer(model1,model2, type = "text",
+          header=FALSE,
+          title = "The association between education, sex and religious identification",
+          digits = 3,
+          omit.stat = c("rsq","f","ser"))
+```
+
+---
+
+## Regression
+
+\footnotesize 
+
+```{r,message=FALSE, fig.height=2.5, fig.width=4, fig.align="center", echo=FALSE, warning=FALSE, results="asis"}
+model1 <- lm(relig~educ,gss)
+model2 <- lm(relig~educ+sex,gss)
+stargazer(model1,model2, out = "text",
+          header=FALSE,
+          title = "The association between education, sex and religious identification",
+          digits = 3,
+          omit.stat = c("rsq","f","ser"))
+```
+
+---
+
+## Regression
+
+- We can also include an interaction term to examine whether the association between education and religious identification depends on gender \pause
+- In `R`, the product of two terms is controlled by the `*` sign
+
+\footnotesize
+
+```{r,message=FALSE, fig.height=2.5, fig.width=4, fig.align="center", eval=FALSE, warning=FALSE, results="asis"}
+model1 <- lm(relig~educ,gss)
+model2 <- lm(relig~educ+sex,gss)
+model3 <- lm(relig~educ+sex+educ*sex,gss) 
+stargazer(model1,model2,model3, type = "text",
+          header=FALSE,
+          title = "The association between education, sex and religious identification",
+          digits = 3,
+          omit.stat = c("rsq","f","ser"))
+```
+
+---
+
+## Regression 
+
+\scriptsize
+
+```{r,message=FALSE, fig.height=2.5, fig.width=4, fig.align="center", echo=FALSE, warning=FALSE, results="asis"}
+model1 <- lm(relig~educ,gss)
+model2 <- lm(relig~educ+sex,gss)
+model3 <- lm(relig~educ+sex+educ*sex,gss) 
+stargazer(model1,model2,model3, out = "text",
+          header=FALSE,
+          title = "The association between education, sex and religious identification",
+          digits = 3,
+          omit.stat = c("rsq","f","ser"))
+```
+
+## Regression
+
+- We can change the dependent variable from religious identification to income
+
+\footnotesize
+
+```{r,message=FALSE, fig.height=2.5, fig.width=4, fig.align="center", eval=FALSE, warning=FALSE, results="asis"}
+model1 <- lm(rincome~educ,gss)
+model2 <- lm(rincome~educ+sex,gss)
+model3 <- lm(rincome~educ+sex+educ*sex,gss) 
+stargazer(model1,model2,model3, type = "text",
+          header=FALSE,
+          title = "The association between education, sex and income",
+          digits = 1,
+          omit.stat = c("rsq","f","ser"))
+```
+
+---
+
+## Regression
+
+\scriptsize
+
+```{r,message=FALSE, fig.height=2.5, fig.width=4, fig.align="center", echo=FALSE, warning=FALSE, results="asis"}
+model1 <- lm(rincome~educ,gss)
+model2 <- lm(rincome~educ+sex,gss)
+model3 <- lm(rincome~educ+sex+educ*sex,gss) 
+stargazer(model1,model2,model3, out = "text",
+          header=FALSE,
+          title = "The association between education, sex and income",
+          digits = 1,
+          omit.stat = c("rsq","f","ser"))
+```
+
+
+## Plot Fitted Regression Line
+
+- We can use the function `predict.lm` to apply the estimated regression equation to any data
+- Here we want to show the predicted values by men and women separately
+
+\footnotesize
+
+```{r,message=FALSE, fig.height=2.5, fig.width=4, fig.align="center", warning=FALSE}
+## create a hypothetical data for men
+predict_men <-
+  data.frame(educ=seq(0,20,1),
+           sex=rep(0,21))
+
+## make predictions
+y_hat <-
+  predict.lm(model3,
+           predict_men)
+
+## store the data
+predict_men$y_hat <- y_hat
+```
+
+---
+
+\footnotesize
+
+```{r,message=FALSE, fig.height=2.5, fig.width=4, fig.align="center", warning=FALSE}
+## look at the stored data
+head(predict_men)
+```
+
+---
+
+- We can symmetrically create predicted values for women
+
+```{r,message=FALSE, fig.height=2.5, fig.width=4, fig.align="center", warning=FALSE}
+## create a hypothetical data for women
+predict_women <-
+  data.frame(educ=seq(0,20,1),
+           sex=rep(1,21))
+
+## make predictions
+y_hat <-
+  predict.lm(model3,
+           predict_women)
+
+## store the data
+predict_women$y_hat <- y_hat
+```
+
+---
+
+\footnotesize
+
+```{r,message=FALSE, fig.height=2.5, fig.width=4, fig.align="center", warning=FALSE}
+## look at the stored data
+head(predict_women)
+```
+
+---
+
+- We combine these two datasets into one by calling `rbind()` that represents row-wise binding
+- To make `rbind()` work, the two datasets have to have same column names
+
+```{r,message=FALSE, fig.height=2.5, fig.width=4, fig.align="center", warning=FALSE}
+predict <- rbind(predict_men,predict_women)
+```
+
+---
+
+- Plot the predicted value by calling `ggplot()`
+
+```{r,message=FALSE, fig.height=2.5, fig.width=4, fig.align="center", warning=FALSE}
+library(ggplot2)
+ggplot(predict,
+       aes(x=educ,y=y_hat,group=sex,color=sex)) +
+  geom_line()
+  
+```
+
+---
+
+- We want to adjust
+- 1. `Sex` from a continuous variable to a categorical variable
+- 2. Manually defined colors
+- 3. `x-axis` and `y-axis` labels
+- 4. Omit the legend title
+- 5. Change the 
+
+```{r,message=FALSE, fig.height=2.5, fig.width=4, fig.align="center", eval=FALSE, warning=FALSE}
+ggplot(predict,
+       aes(x=educ,y=y_hat,group=factor(sex),color=factor(sex))) +
+  geom_line() +
+  scale_color_manual(labels = c("Men", "Women"), 
+                     values = c("darkblue", "darkred")) +
+  xlab("Years of education") +
+  ylab("Predicted Income") +
+  theme_bw() +
+  theme(legend.title= element_blank())
+```
+
+---
+
+```{r,message=FALSE, fig.height=2.5, fig.width=4, fig.align="center", echo=FALSE, warning=FALSE}
+ggplot(predict,
+       aes(x=educ,y=y_hat,group=factor(sex),color=factor(sex))) +
+  geom_line() +
+  scale_color_manual(labels = c("Men", "Women"), 
+                     values = c("darkblue", "darkred")) +
+  xlab("Years of education") +
+  ylab("Predicted Income") +
+  theme_bw() +
+  theme(legend.title= element_blank())
+```
+
+---
+
+## Adding more categorical variables
+
+- When we want to add categorical variables that can take multiple values, we use `factor()`
+- `R` automatically omits one group as reference
+
+\footnotesize
+
+```{r,message=FALSE, fig.height=2.5, fig.width=4, fig.align="center", eval=FALSE, warning=FALSE}
+model4 <- lm(relig~educ+sex+factor(marital),gss)
+stargazer(model4, type = "text",
+          header=FALSE,
+          title = "The association between education, sex, marital status and religion",
+          digits = 3,
+          single.row = T,
+          omit.stat = c("rsq","f","ser"))
+```
+
+---
+
+\footnotesize
+
+```{r,message=FALSE, fig.height=2.5, fig.width=4, fig.align="center", echo=FALSE, warning=FALSE, results="asis"}
+model4 <- lm(relig~educ+sex+factor(marital),gss)
+stargazer(model4, out = "text",
+          header=FALSE,
+          title = "The association between education, sex, marital status and religion",
+          digits = 3,
+          single.row = T,
+          omit.stat = c("rsq","f","ser"))
+```
+
+---
+
+## Plot the Coefficients
+
+- We use function `plot_summs` in `R` to create a coefficient plot
+- Take a look at what `plot_summs` can do and its flexibilities [here](https://jtools.jacob-long.com/reference/plot_summs.html)
+
+\footnotesize
+
+```{r,message=FALSE, fig.height=3.5, fig.width=5, fig.align="center", eval=FALSE, warning=FALSE}
+library(jtools)
+plot_summs(model4,
+           colors="darkred",
+           coefs = c("Education" = "educ", "Women" = "sex",
+                     "Widowed" = "factor(marital)2", 
+                     "Divorced" = "factor(marital)3",
+                     "Separated" = "factor(marital)4",
+                     "Never married" = "factor(marital)5"))
+```
+
+---
+
+```{r,message=FALSE, fig.height=3.5, fig.width=5, fig.align="center", echo=FALSE, warning=FALSE}
+library(jtools)
+plot_summs(model4,
+           colors="darkred",
+           coefs = c("Education" = "educ", "Women" = "sex",
+                     "Widowed" = "factor(marital)2", 
+                     "Divorced" = "factor(marital)3",
+                     "Separated" = "factor(marital)4",
+                     "Never married" = "factor(marital)5"))
+```
+

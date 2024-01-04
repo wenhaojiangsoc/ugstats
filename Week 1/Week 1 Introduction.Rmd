@@ -1,0 +1,492 @@
+---
+title: "Statistics for Social Research"
+subtitle: "Week 1: Introduction"
+author: "Wenhao Jiang"
+institute: |
+           | Department of Sociology
+           | New York University
+date: September 9, 2022
+output: beamer_presentation
+classoption: "aspectratio=1610"
+theme: "default"
+outertheme: "miniframes"
+header-includes:
+  - \definecolor{nagivation}{rgb}{0,0,0.3}
+  - \definecolor{main}{rgb}{0,0,0.5}
+  - \setbeamercolor{section in head/foot}{bg=nagivation,fg=white}
+  - \usecolortheme[named=main]{structure}
+  - \setbeamertemplate{footline}[page number]
+  - \setbeamerfont{footnote}{size=\footnotesize}
+  - \setbeamerfont{caption}{size=\footnotesize}
+---
+
+# Main Goals
+
+------------------------------------------------------------------------
+
+## Main Goals
+
+- Introduce `R` and `RStudio`
+- Answer questions from the textbook
+- Recap important concepts in lecture
+
+\footnotetext[1]{Acknowledgement: The slides of introducing R is largely based on Applied Statistics with R from https://daviddalpiaz.github.io/appliedstats/}
+
+# Introduction of `R` and `RStudio`
+
+------------------------------------------------------------------------
+
+## Getting Started
+
+- Why `R`
+  1. If you have used Excel before - `R` is more handy and efficient in both data manipulation and statistical analysis 
+  \pause
+  2. If you have used Stata, SAS, or SPSS before - `R` is free, with professionals developing open-sourced new packages every day 
+  \pause
+  3. If you have used Python before - `R` and its packages are more user-friendly to social scientists who are not professional programmers
+  \pause
+  5. Support of \LaTeX \space in `RMarkdown` to write academic papers, make academic slides with `R` **codes knitted**.
+  \pause
+  
+- `R` is useful in both academia and in companies that require statistical/data analysis 
+  
+------------------------------------------------------------------------
+
+## Getting Started
+
+- Why `RStudio`
+  - RStudio, like most IDEs, provides a graphical interface to `R`, making it more user-friendly, and providing dozens of useful features 
+
+------------------------------------------------------------------------
+
+## Getting Started
+
+-   Install in the following order
+    1.  R: <https://www.r-project.org/>
+    2.  RStudio: <https://www.rstudio.com/>
+-   Now open RStudio
+
+------------------------------------------------------------------------
+
+## Quick tour of RStudio
+
+-   There are four panels
+    1.  Source: write your own codes
+    2.  Console: view outputs
+    3.  Environment/History: view stored datasets and variables
+    4.  Files/Plots/Packages/Help
+-   In the Source panel
+    -   Write your own codes
+    -   Save your code in `.R` file
+    -   Click `Run` command to run your entire code
+-   In the console panel
+    -   After clicking `Run` in the source panel, your code is evaluated
+    -   You can directly type your code here to implement
+
+------------------------------------------------------------------------
+
+## Basic Calculations
+
+To get started, we'll use `R` like a simple calculator.
+
+**Addition, Subtraction, Multiplication and Division**
+
+| Math       | `R`     | Result    |
+|------------|---------|-----------|
+| $3 + 2$    | `3 + 2` | `r 3 + 2` |
+| $3 - 2$    | `3 - 2` | `r 3 - 2` |
+| $3 \cdot2$ | `3 * 2` | `r 3 * 2` |
+| $3 / 2$    | `3 / 2` | `r 3 / 2` |
+
+------------------------------------------------------------------------
+
+```{r}
+1 + 3
+```
+
+------------------------------------------------------------------------
+
+**Exponents**
+
+| Math         | `R`             | Result            |
+|--------------|-----------------|-------------------|
+| $3^2$        | `3 ^ 2`         | `r 3 ^ 2`         |
+| $2^{(-3)}$   | `2 ^ (-3)`      | `r 2 ^ (-3)`      |
+| $100^{1/2}$  | `100 ^ (1 / 2)` | `r 100 ^ (1 / 2)` |
+| $\sqrt{100}$ | `sqrt(100)`     | `r sqrt(100)`     |
+
+------------------------------------------------------------------------
+
+**Mathematical Constants**
+
+| Math  | `R`      | Result     |
+|-------|----------|------------|
+| $\pi$ | `pi`     | `r pi`     |
+| $e$   | `exp(1)` | `r exp(1)` |
+
+------------------------------------------------------------------------
+
+**Logarithms**
+
+-   Note that we will use $\ln$ and $\log$ interchangeably to mean the natural logarithm.
+-   There is no `ln()` in `R`, instead it uses `log()` to mean the natural logarithm.
+
+| Math              | `R`                 | Result                |
+|-------------------|---------------------|-----------------------|
+| $\log(e)$         | `log(exp(1))`       | `r log(exp(1))`       |
+| $\log_{10}(1000)$ | `log10(1000)`       | `r log10(1000)`       |
+| $\log_{2}(8)$     | `log2(8)`           | `r log2(8)`           |
+| $\log_{4}(16)$    | `log(16, base = 4)` | `r log(16, base = 4)` |
+
+------------------------------------------------------------------------
+
+**Trigonometry**
+
+| Math            | `R`           | Result          |
+|-----------------|---------------|-----------------|
+| $\sin(\pi / 2)$ | `sin(pi / 2)` | `r sin(pi / 2)` |
+| $\cos(0)$       | `cos(0)`      | `r cos(0)`      |
+
+------------------------------------------------------------------------
+
+**Descriptive Statistic**
+
+| Math                                           | `R`      |
+|------------------------------------------------|----------|
+| $\frac{1}{n}\sum_{i=1}^{n} x_i$                | `mean(x)`|
+| $\frac{1}{n-1}\sum_{i=1}^{n} (x_i - \bar{x})^2$| `var(x)` |
+
+------------------------------------------------------------------------
+
+## Getting Help
+
+-   In using `R` as a calculator, we have seen a number of functions: `sqrt()`, `exp()`, `log()` and `sin()`.
+-   To get documentation about a function in `R`, simply put a question mark in front of the function name or call function `help()` and `RStudio` will display the documentation, for example:
+
+```{r, eval = FALSE}
+?log
+?sin
+help(log)
+help(sin)
+```
+
+------------------------------------------------------------------------
+
+## Installing Packages
+
+-   One of the main strengths of `R` as an open-source project is its package system
+
+-   To install a package, use the `install.packages()` function.
+
+    -   Think of this as buying a recipe book from the store, bringing it home, and putting it on your shelf.
+
+```{r, eval = FALSE}
+install.packages("ggplot2")
+```
+
+-   Once a package is installed, it must be loaded into your current `R` session before being used.
+    -   Think of this as taking the book off of the shelf and opening it up to read.
+
+```{r, message = FALSE, warning = FALSE}
+library(ggplot2)
+```
+
+------------------------------------------------------------------------
+
+## Installing Packages
+
+Packages like `ggplot2` are extremely powerful
+
+![Residential v. Experienced Segregation in New York City, 2018-2020](/Users/wenhao/Dropbox/RA Josh Siwei/Figures/RESvEXP_race_nyc.png){ width=85%}
+
+------------------------------------------------------------------------
+
+-   Once you close `R`, all the packages are closed and put back on the imaginary shelf.
+-   The next time you open `R`, you do not have to install the package again, but you do have to load any packages you intend to use by invoking `library()`.
+
+------------------------------------------------------------------------
+
+## Helps
+
+-   The RStudio team has developed [a number of "cheatsheets"](https://www.rstudio.com/resources/cheatsheets/){target="_blank"} for working with both `R` and RStudio.
+-   [This particular cheatsheet for Base `R`](https://github.com/rstudio/cheatsheets/blob/main/base-r.pdf){target="_blank"} will summarize many of the concepts in this document.
+
+# Data 
+
+------------------------------------------------------------------------
+
+## Data Types
+
+`R` has a number of basic data *types*.
+
+- Numeric
+    - Also known as Double. The default type when dealing with numbers.
+    - Examples: `1`, `1.0`, `42.5`
+    - Store *numerical* variables
+- Logical
+    - Two possible values: `TRUE` and `FALSE`
+    - You can also use `T` and `F`
+    - `NA` is also considered logical
+- Character
+    - Examples: `"a"`, `"Statistics"`, `"1 plus 2."`
+    - Usually store *categorical* variables
+    
+------------------------------------------------------------------------
+
+## Data Structures
+
+- `R` also has a number of basic data *structures*. 
+- A data structure is either 
+    - homogeneous (all elements are of the same data type) 
+    - heterogeneous (elements can be of more than one data type).
+
+| Dimension | **Homogeneous** | **Heterogeneous** |
+|-----------|-----------------|-------------------|
+| 1         | Vector          | List              |
+| 2         | Matrix          | Data Frame        |
+| 3+        | Array           |                   |
+
+
+# Vector
+
+------------------------------------------------------------------------
+
+## Vectors
+
+**Basics of vectors**
+
+- Many operations in `R` make heavy use of **vectors**. 
+    - Vectors in `R` are indexed starting at `1`. 
+- The most common way to create a vector in `R` is using the `c()` function, which is short for "combine".
+
+```{r}
+c(1, 3, 5, 7, 8, 9)
+```
+
+------------------------------------------------------------------------
+
+**Basics of vectors**
+
+- If we would like to store this vector in a **variable** we can do so with the **assignment** operator `=`
+    - The variable `x` now holds the vector we just created, and we can access the vector by typing `x`
+
+```{r}
+x = c(1, 3, 5, 7, 8, 9)
+x
+# The following does the same thing
+x <- c(1, 3, 5, 7, 8, 9)
+x
+```
+
+------------------------------------------------------------------------
+
+- The operator `=` and `<-` work as an assignment operator. 
+- In `R` code the line starting with `#` is `comment`, which is ignored when you run the code. 
+ 
+<!-- 
+Because vectors must contain elements that are all the same type, `R` will automatically coerce to a single type when attempting to create a vector that combines multiple types.
+
+```{r}
+c(42, "Statistics", TRUE)
+c(42, TRUE)
+```
+-->
+
+------------------------------------------------------------------------
+
+## A sequence of numbers as a vector
+
+- The quickest and easiest way to do this is with the `:` operator, which creates a sequence of integers between two specified integers.
+
+```{r}
+y <- 1:10
+y
+```
+
+## Useful functions for creating vectors
+
+- Use the `seq()` function for a more general sequence.
+
+```{r}
+seq(from = 1.5, to = 2.5, by = 0.1)
+```
+
+- Here, the input labels `from`, `to`, and `by` are optional.
+
+```{r}
+seq(1.5, 2.5, 0.1)
+```
+
+------------------------------------------------------------------------
+
+- The `rep()` function repeat a single value a number of times.
+
+```{r}
+rep("A", times = 10)
+```
+
+- The `rep()` function can be used to repeat a vector some number of times.
+
+```{r}
+rep(x, times = 3)
+```
+
+------------------------------------------------------------------------
+
+- We have now seen four different ways to create vectors:
+    1. `c()`
+    2. `:`
+    3. `seq()`
+    4. `rep()`
+
+ - They are often used together
+
+```{r}
+c(x, rep(seq(1, 5, 2), 2), c(1, 2), 2:4)
+```
+
+------------------------------------------------------------------------
+
+## Length
+
+- The length of a vector can be obtained with the `length()` function.
+
+```{r}
+length(x)
+length(y)
+```
+
+## Subsetting
+
+- Use square brackets, `[]`, to obtain a subset of a vector. 
+- We see that `x[1]` returns the first element.
+
+
+```{r}
+x
+x[1]
+x[3]
+```
+
+------------------------------------------------------------------------
+
+- We can also exclude certain indexes, in this case the second element.
+
+```{r}
+x[-2]
+```
+
+- We can subset based on a vector of indices.
+
+```{r}
+x[1:3]
+x[c(1,3,4)]
+```
+
+------------------------------------------------------------------------
+
+- We could also use a vector of logical values
+
+```{r}
+z <- c(TRUE, TRUE, FALSE, TRUE, TRUE, FALSE)
+x[z]
+```
+
+- Note that the length of `z` must of the same as `x`
+- Combining `subset` with `length` could be very useful in summarizing the proportion of e.g. missing values
+
+```{r}
+x[z] <- NA
+x
+length(x[is.na(x)])
+```
+
+## Vectorization
+
+- One of the biggest strengths of `R` is its use of vectorized operations.    
+    - Frequently the lack of understanding of this concept leads of a belief that `R` is *slow*. 
+
+- When a function like `log()` is called on a vector `x`, a vector is returned which has applied the function to each element of the vector  `x`.
+
+```{r}
+x = 1:10
+x + 1
+```
+
+```{r}
+2 * x
+``` 
+
+------------------------------------------------------------------------
+
+```{r}
+2 ^ x
+```
+
+```{r}
+round(sqrt(x), 2)
+```
+
+```{r}
+round(log(x), 2)
+```
+
+## Logical Operators
+
+| Operator | Summary               | Example               | Result |
+|----------|-----------------------|-----------------------|--------|
+| `x < y`  | `x` less than `y`                | `3 < 42`               | `r 3 < 42`               |
+| `x > y`  | `x` greater than `y`             | `3 > 42`               | `r 3 > 42`               |
+| `x <= y` | `x` less than or equal to `y`    | `3 <= 42`              | `r 3 <= 42`              |
+| `x >= y` | `x` greater than or equal to `y` | `3 >= 42`              | `r 3 >= 42`              |
+| `x == y` | `x`equal to `y`                  | `3 == 42`              | `r 3 == 42`              |
+| `x != y` | `x` not equal to `y`             | `3 != 42`              | `r 3 != 42`              |
+| `!x`     | not `x`                          | `!(3 > 42)`            | `r !(3 > 42)`            |
+| `x | y`  | `x` or `y`                       | `(3 > 42) | TRUE`      | `r (3 > 42) | TRUE`      |
+| `x & y`  | `x` and `y`                      | `(3 < 4) & (42 > 13)` | `r (3 < 4) & (42 > 13)` |
+
+------------------------------------------------------------------------
+
+- Logical operators are vectorized. 
+
+```{r}
+x = c(1, 3, 5, 7, 8, 9)
+x > 3
+x < 3
+x == 3
+x != 3
+```
+
+------------------------------------------------------------------------
+
+```{r}
+x == 3 & x != 3
+x == 3 | x != 3
+is.na(x)
+```
+
+------------------------------------------------------------------------
+
+- This is extremely useful for subsetting.
+
+```{r}
+x[x > 3]
+x[x != 3]
+```
+
+
+## Short exercise 
+
+1. Create the vector $z = (1,2,1,2,1,2)$, which has the same length as $x$. 
+2. Pick up the elements of $x$ which corresponds to 1 in the vector $z$, i.e., in position 1, 3, and 5. 
+
+```{r}
+z <- c(1,2,1,2,1,2)
+x[z == 1]
+```
+
+# Q & A
+
+------------------------------------------------------------------------
+
+- Are there any questions from lectures, textbooks, or `R`?

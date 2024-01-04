@@ -1,0 +1,404 @@
+---
+title: "Week 10: Categorical Data"
+author: "Wenhao Jiang"
+institute: |
+           | Department of Sociology
+           | New York University
+date: November 11, 2022
+output: beamer_presentation
+classoption: "aspectratio=1610"
+theme: "default"
+outertheme: "miniframes"
+header-includes:
+  - \definecolor{nagivation}{rgb}{0,0,0.3}
+  - \definecolor{main}{rgb}{0,0,0.5}
+  - \setbeamercolor{section in head/foot}{bg=nagivation,fg=white}
+  - \usecolortheme[named=main]{structure}
+  - \setbeamertemplate{footline}[page number]
+  - \setbeamerfont{footnote}{size=\footnotesize}
+  - \setbeamerfont{caption}{size=\footnotesize}
+---
+
+# Quiz 3
+
+## Common Mistakes
+
+- True or False
+- A significant regression coefficient for an independent variable $X$ indicates that $X$ is a cause of the dependent variable $y$
+
+---
+
+## Read STATA output
+
+- Look at the STATA output
+
+---
+
+## Intuition of Multivariate Regression
+
+- When the second independent variable is a categorical variable with three possible values; slopes do not differ by the second independent variable
+
+```{r,message=FALSE, fig.height=4, fig.width=5.5, fig.align="center", echo=FALSE, warning=FALSE}
+library(scatterplot3d)
+## create a population
+x1 <- runif(10000, min=0, max=20)
+x2 <- rbinom(10000, size=2, prob=0.5)
+beta1 <- 4000
+beta2 <- 20000
+beta0 <- 25000
+epsilon <- rnorm(10000,mean=0,sd=10000)
+y <- beta0+beta1*x1+beta2*x2+epsilon
+y<-y/1000
+
+## draw a sample
+set.seed(1)
+pop <- data.frame(education=x1,race=x2,income=y)
+sample <- pop[sample(nrow(pop), 1000), ]
+
+## plot the sample-level correlation
+colors <- c("#999999", "#E69F00","darkblue")
+colors <- colors[as.numeric(sample$race)+1]
+scatterplot3d(sample, pch = 16, 
+              color=colors,
+              cex.symbols=0.4*par("cex"),
+              cex.axis=0.5*par("cex.axis"),
+              cex.lab=0.5*par("cex.lab"), 
+              font.axis=0.5*par("font.axis"),
+              font.lab=0.5*par("font.lab"))
+```
+
+---
+
+## Intuition of Multivariate Regression
+
+- We can visualize the 3-D plot by a 2-D scatterplot
+
+```{r,message=FALSE, fig.height=2.5, fig.width=4, fig.align="center", echo=FALSE, warning=FALSE}
+library(dplyr)
+library(ggplot2)
+## plot the association by race
+sample %>%
+  ggplot(aes(y=income,x=education,group=factor(race), 
+             color=factor(race))) +
+  geom_point(size=0.5) +
+  scale_color_manual(values=c("#999999", "#E69F00","darkblue"),
+                     labels = c("Asian","Black","White"),
+                     name = "") +
+  geom_smooth(method = "lm",lwd=0.3) +
+  theme_bw()
+```
+
+---
+
+## Intuition of Multivariate Regression
+
+- Without the hypothetical points, we get similar lines as in the quiz
+
+```{r,message=FALSE, fig.height=2.5, fig.width=4, fig.align="center", echo=FALSE, warning=FALSE}
+library(dplyr)
+library(ggplot2)
+## plot the association by race
+sample %>%
+  ggplot(aes(y=income,x=education,group=factor(race), 
+             color=factor(race))) +
+  scale_color_manual(values=c("#999999", "#E69F00","darkblue"),
+                     labels = c("Asian","Black","White"),
+                     name = "") +
+  geom_smooth(method = "lm",lwd=0.3, se=F) +
+  theme_bw()
+```
+
+---
+
+## Intuition of Multivariate Regression
+
+- When the second independent variable is a categorical variable with three possible values; slopes differ by the second independent variable
+
+```{r,message=FALSE, fig.height=4, fig.width=5.5, fig.align="center", echo=FALSE, warning=FALSE}
+library(scatterplot3d)
+## create a population
+x1 <- runif(10000, min=0, max=20)
+x2 <- rbinom(10000, size=2, prob=0.5)
+beta1 <- 4000
+beta2 <- 20000
+beta3 <- -2000
+beta0 <- 25000
+epsilon <- rnorm(10000,mean=0,sd=10000)
+y <- beta0+beta1*x1+beta2*x2+beta3*x1*x2+epsilon
+y<-y/1000
+
+## draw a sample
+set.seed(1)
+pop <- data.frame(education=x1,race=x2,income=y)
+sample <- pop[sample(nrow(pop), 1000), ]
+
+## plot the sample-level correlation
+colors <- c("#999999", "#E69F00","darkblue")
+colors <- colors[as.numeric(sample$race)+1]
+scatterplot3d(sample, pch = 16, 
+              color=colors,
+              cex.symbols=0.4*par("cex"),
+              cex.axis=0.5*par("cex.axis"),
+              cex.lab=0.5*par("cex.lab"), 
+              font.axis=0.5*par("font.axis"),
+              font.lab=0.5*par("font.lab"))
+```
+
+---
+
+## Intuition of Multivariate Regression
+
+- We can visualize the 3-D plot by a 2-D scatterplot
+
+```{r,message=FALSE, fig.height=2.5, fig.width=4, fig.align="center", echo=FALSE, warning=FALSE}
+## plot the association by race
+sample %>%
+  ggplot(aes(y=income,x=education,group=factor(race), 
+             color=factor(race))) +
+  scale_color_manual(values=c("#999999", "#E69F00","darkblue"),
+                     labels = c("Asian","Black","White"),
+                     name = "") +
+  geom_point(size=0.5) +
+  geom_smooth(method = "lm",lwd=0.3, se=T) +
+  theme_bw()
+```
+
+---
+
+## Intuition of Multivariate Regression
+
+- Without the hypothetical points, we get similar lines as in the quiz
+
+```{r,message=FALSE, fig.height=2.5, fig.width=4, fig.align="center", echo=FALSE, warning=FALSE}
+## plot the association by race
+sample %>%
+  ggplot(aes(y=income,x=education,group=factor(race), 
+             color=factor(race))) +
+  scale_color_manual(values=c("#999999", "#E69F00","darkblue"),
+                     labels = c("Asian","Black","White"),
+                     name = "") +
+  geom_smooth(method = "lm",lwd=0.3, se=F) +
+  theme_bw()
+```
+
+
+# Categorical Data
+
+## Basics
+
+- While we already talked much about quantitative/numeric/continuous data (e.g., income), we have not discussed much about categorical data
+- In statistics, a categorical variable is a variable that can take on one of a limited, and usually fixed, number of possible values, assigning each unit of observation to a particular group or nominal category on the basis of some qualitative property
+  - Typical examples are gender, race, class (working class, middle class, upper class), and religious preferences
+  - Sometimes these variables are the core of contemporary sociology \pause
+- why do we specifically care about categorical data beyond numeric data?
+
+## Basics
+
+- We may be interested in the association between years of education and religious belief (1=having some belief; 0=no religious belief)
+
+```{r,message=FALSE, fig.height=2.5, fig.width=4, fig.align="center", echo=FALSE, warning=FALSE}
+## set your working directory - you should set your own unique one!
+setwd("~/Dropbox/Teaching/SOCUA-302/Week 8")
+
+## read csv data - this is 2021 GSS data
+gss <- read.csv("GSS_SOCUA_W8.csv")
+
+## recode religion
+gss[which(gss$relig!=4),
+    "relig"] <- 1
+gss[which(gss$relig==4),
+    "relig"] <- 0
+
+gss %>%
+  dplyr::mutate(relig=case_when(educ>16 ~ 0,
+                         TRUE ~ relig)) %>%
+  filter(educ <= 18) %>%
+  ggplot(aes(x=educ,y=relig)) +
+  geom_jitter(width = 0.35,
+              height = 0.05,
+              shape = 16,
+              alpha = 0.5,
+              size = 0.1,
+              color = "darkblue") +
+  geom_smooth(method = "lm",lwd=0.3, se=T,
+              color="darkred") +
+  theme_bw() +
+  xlab("Years of Education") +
+  ylab("Having Religious Belief") +
+  theme(text=element_text(family="Times"),
+              plot.title = element_text(size=6),
+              axis.text.x=element_text(size=6),
+              axis.text.y=element_text(size=6))
+  
+```
+
+---
+
+## Basics
+
+- We may be interested in the association between years of education and religious belief
+- When we treat religious belief, a categorical variable, as a continuous variable, we may have fitted values that do not make sense in reality (e.g., $\hat{y}>1$, or $\hat{y}<0$)
+- We want predictions to be bounded within 0 and 1
+- We will go beyond OLS in the following weeks to address these particular scenarios stemming from categorical data
+
+---
+
+## Basics
+
+- How do we describe categorical data?
+- For a single variable
+  - For numeric/quantitative data, we use histogram \pause
+  - For categorical data, we use **barplot** 
+- We use **barplot** to describe the distribution of categorical values (e.g., gender, race, marital status)
+
+---
+
+## Barplot
+
+- Barplots describe the distribution of categorical data
+
+```{r, fig.height=3, fig.width=3, fig.align="center",echo=FALSE}
+## create a count summary in each category by function `table`
+counts <- table(gss$marital)
+
+## barplot
+barplot(counts, main="Distribution of Marital Status in 2021, GSS",
+   xlab="Marital Status",
+   names.arg=c("Married", "Widowed", "Divorced", "Separated", 
+               "Never Mar."),
+   cex.lab=0.5, cex.axis=0.5, cex.main=0.5, cex.sub=0.5, cex.names=0.32)
+```
+
+---
+
+## Basics
+
+- How do we describe categorical data?
+- For a single variable
+  - For numeric/quantitative data, we use histogram \pause
+  - For categorical data, we use **barplot** 
+- We use **barplot** to describe the distribution of categorical values (e.g., gender, race, marital status)
+- For two categorical variables (e.g., gender current religious belief)
+  - We use a cross-table to summarize the relationship
+
+---
+
+## Basics
+
+- The proportion of men and women who have and have no religious belief
+
+```{r}
+gss %>%
+  filter(!is.na(sex)) %>%
+  group_by(sex) %>%
+  summarize(religious = mean(relig,na.rm=T),
+            nonreligious=mean(1-relig,na.rm=T))
+```
+
+---
+
+## t-test
+
+- Suppose we want to know the gender difference in religious belief
+- This is a typical problem of testing whether **two samples** differ in a proportion \pause
+- The point estimate is $\hat{p}_w - \hat{p}_m$
+- Under the null hypothesis $H_0: p_m = p_w = p$, the estimated $SE_{\hat{p}_m - \hat{p}_w} = \sqrt{\frac{\hat{p}_{pooled}(1-\hat{p}_{pooled})}{n_m} + \frac{\hat{p}_{pooled}(1-\hat{p}_{pooled})}{n_w}}$, where
+- $\hat{p}_{pooled} = \frac{\hat{p}_m \times n_m + \hat{p}_w \times n_w}{n_m + n_w}$
+
+---
+
+## t-test
+- Now in 2021 GSS, there are 1736 men and 2204 women
+- $\hat{p}_{pooled} = \frac{\hat{p}_m \times n_m + \hat{p}_w \times n_w}{n_m + n_w} = \frac{0.680 \times 1736 + 0.745 \times 2204}{1736 + 2204}=0.716$
+- $SE_{\hat{p}_m - \hat{p}_w} = \sqrt{\frac{\hat{p}_{pooled}(1-\hat{p}_{pooled})}{n_m} + \frac{\hat{p}_{pooled}(1-\hat{p}_{pooled})}{n_w}} = 0.014$
+- The point estimate $\hat{p}_w - \hat{p}_m = 0.745- 0.680= 0.065$ \pause
+- $t = \frac{0.065-0}{0.0145} = 4.64$
+- Do we reject the null hypothesis?
+
+---
+
+## Regression
+
+- The t-test produces the exact same estimates as OLS regression
+- $relig_i = \hat{\beta}_0 + \hat{\beta}_1gender_i +e_i$
+
+\footnotesize
+
+```{r,message=FALSE, fig.height=2.5, fig.width=4, fig.align="center", echo=FALSE, warning=FALSE, results="asis"}
+library(stargazer)
+model <- lm(relig~sex,gss)
+stargazer(model, out = "text",
+          single.row = F,
+          header=FALSE,
+          title = "The association between gender and religious belief",
+          digits = 3,
+          omit.stat = c("rsq","f","ser"))
+```
+
+# R Operations
+
+## Read Data
+
+```{r}
+## set your working directory - you should set your own unique one!
+setwd("~/Dropbox/Teaching/SOCUA-302/Week 8")
+
+## read csv data - this is 2021 GSS data
+gss <- read.csv("GSS_SOCUA_W8.csv")
+```
+
+---
+
+## Barplot
+
+```{r, fig.height=3, fig.width=3, fig.align="center",eval=FALSE}
+## create a count summary in each category by function `table`
+counts <- table(gss$marital)
+
+## barplot
+barplot(counts, main="Distribution of Marital Status in 2021, GSS",
+   xlab="Marital Status",
+   names.arg=c("Married", "Widowed", "Divorced", "Separated", 
+               "Never Mar."),
+   cex.lab=0.5, cex.axis=0.5, cex.main=0.5, cex.sub=0.5, cex.names=0.32)
+```
+
+---
+
+## Cross Table
+
+- The proportion of men and women who have and have no religious belief
+
+\footnotesize
+
+```{r}
+## recode religion
+gss[which(gss$relig!=4),"relig"] <- 1
+gss[which(gss$relig==4),"relig"] <- 0
+
+## cross table
+gss %>%
+  filter(!is.na(sex)) %>%
+  group_by(sex) %>%
+  summarize(religious = mean(relig,na.rm=T),
+            nonreligious=mean(1-relig,na.rm=T))
+```
+
+---
+
+## Regression
+
+- The t-test produces the exact same estimates as OLS regression
+- $relig_i = \hat{\beta}_0 + \hat{\beta}_1gender_i +e_i$
+
+```{r,message=FALSE, fig.height=2.5, fig.width=4, fig.align="center", eval=FALSE, warning=FALSE, results="asis"}
+library(stargazer)
+model <- lm(relig~sex,gss)
+stargazer(model, type = "text",
+          single.row = F,
+          header=FALSE,
+          title = "The association between gender and religious belief",
+          digits = 3,
+          omit.stat = c("rsq","f","ser"))
+```
+

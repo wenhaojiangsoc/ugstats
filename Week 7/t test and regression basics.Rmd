@@ -1,0 +1,321 @@
+---
+title: "Week 7: t-test and Regression Basics"
+author: "Wenhao Jiang"
+institute: |
+           | Department of Sociology
+           | New York University
+date: October 21, 2022
+output: beamer_presentation
+classoption: "aspectratio=1610"
+theme: "default"
+outertheme: "miniframes"
+header-includes:
+  - \definecolor{nagivation}{rgb}{0,0,0.3}
+  - \definecolor{main}{rgb}{0,0,0.5}
+  - \setbeamercolor{section in head/foot}{bg=nagivation,fg=white}
+  - \usecolortheme[named=main]{structure}
+  - \setbeamertemplate{footline}[page number]
+  - \setbeamerfont{footnote}{size=\footnotesize}
+  - \setbeamerfont{caption}{size=\footnotesize}
+---
+
+# t-test
+
+## t-test
+
+- A $t$-test is a statistical test that is used to compare the means of two groups. 
+- We use $t$-test in two scenarios:
+  - We do not know the population standard deviation $\sigma$
+  - We know the population $\sigma$, but the sample size is smaller than 30
+  
+```{r, echo=FALSE, fig.cap="Selection of t-test and z-test", out.width = '50%', fig.pos="center"}
+knitr::include_graphics("/Users/wenhao/Dropbox/Teaching/SOCUA-302/Week 7/z-test-vs-t-test.png")
+```
+
+## t-test
+
+- Why do we care about unknown population $\sigma$?
+  - The sample estimate of $\sigma$ using $s$ almost always underestimate $\sigma$. \pause
+  - (not required) By construction, $\mathbb{E}[s^2]=\sigma^2$
+  - The function $f(x) = \sqrt{x}$ is concave; according to jensen's inequality, $\mathbb{E}[\sqrt{s^2}] \le \sqrt{\mathbb{E}[s^2]} = \sigma$
+  - Therefore, when we calculate the deviation of the observed point estimate from the null hypothesis, we almost always overestimate it. 
+  
+---
+
+## t-test
+
+- Why do we care about small sample?
+  - When the sample size is small (typically $n \le 30$), the hypothesis normal distribution of sample means is flatter than the one based on larger samples
+  - The smaller the sample size, the flatter the distribution of mean values is
+  - Look at the $t-$score table
+  
+```{r,message=FALSE,echo=FALSE,fig.height=3, fig.width=3, fig.align="center"}
+## create population
+population <- c(rep(0,4800000),rep(1,5200000))
+
+## empty vector to store means of sample (K times)
+mean_of_sample <- c()
+
+## iterate the process of 2000 times
+for (i in 1:2000){
+  ## sample with n=20
+  sample <- sample(population,20)
+  mean <- mean(sample)
+  mean_of_sample <- c(mean_of_sample,mean)
+}
+
+## plot histogram
+small <- 
+  density(mean_of_sample)
+
+## empty vector to store means of sample (K times)
+mean_of_sample <- c()
+
+## iterate the process of 2000 times
+for (i in 1:2000){
+  ## sample with n=1000
+  sample <- sample(population,1000)
+  mean <- mean(sample)
+  mean_of_sample <- c(mean_of_sample,mean)
+}
+
+## plot histogram
+large <- 
+  density(mean_of_sample)
+
+plot( small, col=rgb(0,0,1,1/4), xlim=c(0,1), ylim=c(0,28),
+      main = "",
+      xlab = "", ylab = "",
+      cex.lab=0.5, cex.axis=0.5, cex.main=0.5, cex.sub=0.5);par(new=TRUE)  # first histogram
+plot( large, col=rgb(1,0,0,1/4), xlim=c(0,1), ylim=c(0,28),
+      main = "",
+      xlab = "", ylab = "",
+      cex.lab=0.5, cex.axis=0.5, cex.main=0.5, cex.sub=0.5)  # second
+title(main = "Sample means distribution with different N",
+      xlab = "Sample means", ylab = "Density",
+      cex.lab=0.5, cex.axis=0.5, cex.main=0.5, cex.sub=0.5
+      )
+
+```
+
+---
+
+## Read Data
+
+- A **data frame** is the **most** common way that we store and interact with data
+
+```{r, message = FALSE, warning = FALSE}
+## set working directory
+setwd("~/Dropbox/Teaching/SOCUA-302/Week 2")
+
+## read the file
+gss <- read.csv("GSS_SOCUA_W2.csv")
+```
+
+---
+
+## Subset Data
+
+- We subset the data when we are interested in a smaller **portion** of the data
+  - E.g., we are only interested in male/female sample
+  - E.g., we are only interested in non-missing data
+
+```{r, message = FALSE, warning = FALSE}
+library(dplyr)
+
+## only male sample
+male <- gss[gss$sex==1,]
+
+## or using dplyr
+male <- gss %>% filter(sex==1)
+
+## symmetrically for women sample
+female <- gss[gss$sex==2,]
+
+## or using dplyr
+female <- gss %>% filter(sex==2)
+```
+
+---
+
+## Subset Data
+
+- Suppose we are interested in testing whether men and women have different number of children on average (mean) in GSS, using $t$-test.
+
+```{r, message = FALSE, warning = FALSE}
+## only male sample with non-missing 
+male <- male[male$childs>=0,]
+
+## or using dplyr
+male <- male %>% filter(childs>=0)
+
+## symmetrically for women sample
+female <- female[female$childs>=0,]
+
+## or using dplyr
+female <- female %>% filter(childs>=0)
+```
+
+---
+
+## t-test
+
+- Suppose we are interested in testing whether men and women have different number of children on average (mean) in GSS, using $t$-test.
+
+\small
+
+```{r, message = FALSE, warning = FALSE}
+## t-test
+t.test(male$childs,
+       female$childs)
+```
+
+# Regression Basics
+
+## Basics
+
+- The main aim of regression for now is to find the correlation (or relationship, or association) between two variables
+- E.g., we are interested in the correlation between vaccinations per person and deaths per $100k$ across US states.
+
+---
+
+## Basics
+
+- Again, we never observe the true correlation at the population level; we can only estimate the correlation from the sample
+- At the **population** level, there is a true **data-generating process** subject to
+  - $Y_i = \beta_0 + \beta_1X_i + \epsilon_i$ \pause
+- We estimate the true **data-generating process** by the sample we draw
+  - $y_i = \hat{\beta}_0 + \hat{\beta}_1x_i + e_i$  
+  
+---
+
+## Basics
+
+- We estimate the true **data-generating process** by the sample we draw
+  - $y_i = \hat{\beta}_0 + \hat{\beta}_1x_i + e_i$  
+- We estimate $\hat{\beta}_0$ and $\hat{\beta}_1$ by minimizing the total sum of $e_i^2$, i.e., Ordinary Least Square (OLS) \pause
+- $S = \sum_{i=1}^{n}e_i^2 = \sum_{i=1}^{n} (y_i - \hat{\beta}_0 - \hat{\beta}_1x_i)^2$
+- We use partial derivative to get $\hat{\beta}_0$ and $\hat{\beta}_1x_i$ that minimizes $S$
+
+---
+
+## Basics
+
+- $S = \sum_{i=1}^{n}e_i^2 = \sum_{i=1}^{n} (y_i - \hat{\beta}_0 - \hat{\beta}_1x_i)^2$
+- We use partial derivative to get $\hat{\beta}_0$ and $\hat{\beta}_1x_i$ that minimizes $S$ 
+   
+$$
+\begin{aligned}
+\frac{\partial S}{\partial \hat{\beta}_0} &= \sum_{i=1}^{n} -2(y_i - \hat{\beta}_0 - \hat{\beta}_1x_i) \\
+&= 0 \\
+\sum_{i=1}^{n} (y_i - \hat{\beta}_0 - \hat{\beta}_1x_i) &= \sum_{i=1}^{n} y_i - n \hat{\beta}_0 - \sum_{i=1}^{n} \hat{\beta}_1x_i \\
+&= 0 \\
+\hat{\beta}_0 &= \frac{\sum_{i=1}^{n} y_i - \sum_{i=1}^{n} \hat{\beta}_1x_i}{n} \\
+&= \bar{y} - \hat{\beta}_1\bar{x}
+\end{aligned}
+$$
+
+---
+
+## Basics
+
+- We use partial derivative to get $\hat{\beta}_0$ and $\hat{\beta}_1x_i$ that minimizes $S$ 
+   
+$$
+\begin{aligned}
+\frac{\partial S}{\partial \hat{\beta}_1} = \sum_{i=1}^{n} -2x_i(y_i - \hat{\beta}_0 - \hat{\beta}_1x_i) &=0 \\
+\sum_{i=1}^{n} x_i (y_i - \hat{\beta}_0 - \hat{\beta}_1x_i) &= 0 \\
+\sum_{i=1}^{n} x_i (y_i - (\bar{y} - \hat{\beta}_1\bar{x}) - \hat{\beta}_1x_i) &= 0 \\
+\sum_{i=1}^{n} (x_i y_i - \bar{y}x_i - \hat{\beta}_1\bar{x}x_i - \hat{\beta}_1x_i^2) &= 0 \\
+\sum_{i=1}^{n} (x_i y_i - \bar{y}x_i) &= \hat{\beta}_1\sum_{i=1}^{n}(x_i^2 - \bar{x}x_i) \\
+\hat{\beta}_1 &= \frac{\sum_{i=1}^{n} (x_i y_i - \bar{y}x_i)}{\sum_{i=1}^{n}(x_i^2 - \bar{x}x_i)}
+\end{aligned}
+$$
+---
+
+## Basics
+
+- With a little bit of algebra as I will show
+
+$$
+\begin{aligned}
+\hat{\beta}_1 &= \frac{\sum_{i=1}^{n} (x_i y_i - \bar{y}x_i)}{\sum_{i=1}^{n}(x_i^2 - \bar{x}x_i)} \\
+&= \frac{\sum_{i=1}^{n} (x_i - \bar{x})(y_i - \bar{y})}{\sum_{i=1}^{n}(x_i - \bar{x})^2} \\
+&= \frac{Cov(x_i,y_i)}{Var(x_i)}
+\end{aligned}
+$$
+
+---
+
+## R Operations
+
+\small 
+
+```{r,message=FALSE,fig.height=3, fig.width=3, fig.align="center"}
+## create a population
+x <- runif(10000, min=0, max=100)
+beta1 <- 2.5
+beta0 <- 20
+epsilon <- rnorm(10000,mean=0,sd=50)
+y <- beta0+beta1*x+epsilon
+
+## plot the population-level correlation
+plot(x,y,cex=0.1)
+```
+
+---
+
+## R Operations
+
+- We draw a random sample ($n=1000$) from the population we created
+
+```{r,message=FALSE,echo=FALSE,fig.height=3.5, fig.width=3.5, fig.align="center"}
+## draw a sample
+pop <- data.frame(x=x,y=y)
+sample <- pop[sample(nrow(pop), 1000), ]
+## plot the population-level correlation
+plot(sample$x,sample$y,cex=0.1)
+```
+
+---
+
+## R Operations
+
+- We fit a regression line to capture the correlation between $x$ and $y$
+
+```{r,message=FALSE,echo=FALSE,fig.height=3.5, fig.width=3.5, fig.align="center"}
+## plot the population-level correlation
+plot(sample$x,sample$y,cex=0.1)
+# plot a regression line
+abline(lm(y~x,data=sample),col='darkred')
+```
+
+---
+
+## R Operations
+
+- How do we get the slope and the intercept from `R`?
+
+\tiny 
+
+```{r}
+model <- lm(y~x,data=sample)
+summary(model)
+```
+
+---
+
+## R Operations
+
+- Is this the same as our formula?
+
+```{r}
+## slope
+beta1 <- cov(sample$x,sample$y)/var(sample$x)
+beta1
+
+## intercept
+mean(sample$y) - beta1*mean(sample$x)
+```
+
+

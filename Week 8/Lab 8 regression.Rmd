@@ -1,0 +1,344 @@
+---
+title: "Week 8: Regression"
+author: "Wenhao Jiang"
+institute: |
+           | Department of Sociology
+           | New York University
+date: October 28, 2022
+output: beamer_presentation
+classoption: "aspectratio=1610"
+theme: "default"
+outertheme: "miniframes"
+header-includes:
+  - \definecolor{nagivation}{rgb}{0,0,0.3}
+  - \definecolor{main}{rgb}{0,0,0.5}
+  - \setbeamercolor{section in head/foot}{bg=nagivation,fg=white}
+  - \usecolortheme[named=main]{structure}
+  - \setbeamertemplate{footline}[page number]
+  - \setbeamerfont{footnote}{size=\footnotesize}
+  - \setbeamerfont{caption}{size=\footnotesize}
+---
+
+# Regression
+
+## Regression Basics
+
+- The main aim of regression is to find the correlation (or relationship, or association) between two variables
+  - We are interested in the relationship between vaccinations per person and deaths per $100k$ across US states. 
+  - We are interested in the relationship between neighborhood racial segregation and the chance of children's upward mobility \pause
+- We call the variable we want to use to explain the other the **explanatory**, or the **independent** variable
+- We call the variable being explained the **outcome**, or the **dependent** variable
+
+---
+
+## Regression Basics
+
+- The main aim of regression is to find the correlation (or relationship, or association) between two variables
+- We call the variable we want to use to explain the other the **explanatory**, or the **independent** variable
+- We call the variable being explained the **outcome**, or the **dependent** variable
+- We use $x_i$ to denote the **explanatory** variable, and $y_i$ to denote the **outcome** variable, with $i$ representing individual observations (i.e., there can be many values for the explanatory and the outcome variable, $(x_1,y_1), (x_2,y_2),...,(x_n,y_n)$) \pause
+- Therefore, $y_i$ is always at the left side of the equation to be "predicted" or "fitted" by $x_i$, which is always at the right side of the equation.
+
+---
+
+## Regression Basics
+
+- At the **population** level, there is a true **data-generating process** subject to
+- $Y_i = \beta_0 + \beta_1X_i + \epsilon_i$
+  
+```{r,message=FALSE, fig.height=2.5, fig.width=4, fig.align="center", echo=FALSE, warning=FALSE}
+library(dplyr)
+library(ggplot2)
+
+## create a population
+x <- runif(10000, min=0, max=100)
+beta1 <- 2.5
+beta0 <- 20
+epsilon <- rnorm(10000,mean=0,sd=120)
+y <- beta0+beta1*x+epsilon
+
+## plot the population-level correlation
+pop <- data.frame(x=x,y=y)
+pop %>%
+  ggplot(aes(x=x,y=y)) +
+  geom_point(size=0.5) +
+  geom_smooth(method = lm,se=F,lwd=0.5) +
+  ylim(-250,500) +
+  theme_bw()
+```
+
+---
+
+## Regression Basics
+
+- We never observe the population-level process. We can only estimate the true **data-generating process** by the **single** sample ($n=1000$) we draw
+
+```{r,message=FALSE,echo=FALSE,fig.height=2.5, fig.width=4, fig.align="center", echo=FALSE, warning=FALSE}
+## draw a sample
+set.seed(1)
+sample <- pop[sample(nrow(pop), 1000), ]
+## plot the population-level correlation
+sample %>%
+  ggplot(aes(x=x,y=y)) +
+  geom_point(size=0.5) +
+  ylim(-250,500) +
+  theme_bw()
+```
+
+---
+
+## Regression Basics
+
+- We never observe the population-level process. We can only estimate the true **data-generating process** by the **single** sample ($n=1000$) we draw
+- $y_i = \hat{\beta}_0 + \hat{\beta}_1x_i + e_i$   \pause
+- We derive $\hat{\beta}_0$ and $\hat{\beta}_1$ by minimizing the total sum of $e_i^2$, $S = \sum_{i=1}^{n}e_i^2$
+
+---
+
+## Regression Basics
+
+```{r,message=FALSE,echo=FALSE,fig.height=2.5, fig.width=4, fig.align="center", echo=FALSE, warning=FALSE}
+## draw a sample
+set.seed(1)
+sample <- pop[sample(nrow(pop), 1000), ]
+sample %>%
+  ggplot(aes(x=x,y=y)) +
+  geom_point(size=0.5) +
+  geom_smooth(method = lm,se=F,lwd=0.5) +
+  ylim(-250,500) +
+  theme_bw()
+```
+
+---
+
+## Regression Basics
+
+- We never observe the population-level process. We can only estimate the true **data-generating process** by the **single** sample ($n=1000$) we draw
+- $y_i = \hat{\beta}_0 + \hat{\beta}_1x_i + e_i$  
+- $\hat{\beta}_1 = \frac{Cov(x_i,y_i)}{Var(x_i)}$ 
+- $\bar{y} = \hat{\beta}_0 + \hat{\beta}_1\bar{x}$
+
+---
+
+## Regression Basics
+
+- Just as other statistics e.g. sample mean, $\hat{\beta}_1$ and $\hat{\beta}_0$ involves uncertainty \pause
+- The uncertainty comes from the sampling, i.e., for different samples, we will get a different $\hat{\beta}_1$ and $\hat{\beta}_0$
+
+---
+
+## Regression Basics
+
+```{r,message=FALSE,echo=FALSE,fig.height=3, fig.width=4, fig.align="center", echo=FALSE,warning=FALSE}
+library(ggplot2)
+## draw a sample
+set.seed(1)
+pop <- data.frame(x=x,y=y)
+sample <- pop[sample(nrow(pop), 1000), ]
+## plot the sample-level correlation
+sample %>%
+  ggplot(aes(x=x,y=y)) +
+  geom_point(size=0.5) +
+  geom_smooth(method = lm,se=F,lwd=0.5) +
+  ylim(-250,500) +
+  theme_bw()
+```
+
+---
+
+## Regression Basics
+
+```{r,message=FALSE,echo=FALSE,fig.height=3, fig.width=4, fig.align="center", echo=FALSE,warning=FALSE}
+total_sample <- data.frame()
+for (i in 1:2){
+  ## draw a sample
+  set.seed(i)
+  sample <- pop[sample(nrow(pop), 1000), ]
+  sample$index <- i
+  total_sample <- rbind(total_sample,sample)
+}
+
+## plot the sample-level correlation
+total_sample %>%
+  ggplot(aes(x=x,y=y,group=index)) +
+  geom_smooth(method = lm,se=F,lwd=0.5) +
+  ylim(-250,500) +
+  theme_bw()
+```
+
+---
+
+## Regression Basics
+
+```{r,message=FALSE,echo=FALSE,fig.height=3, fig.width=4, fig.align="center", echo=FALSE,warning=FALSE}
+total_sample <- data.frame()
+for (i in 1:5){
+  ## draw a sample
+  set.seed(i)
+  sample <- pop[sample(nrow(pop), 1000), ]
+  sample$index <- i
+  total_sample <- rbind(total_sample,sample)
+}
+
+## plot the sample-level correlation
+total_sample %>%
+  ggplot(aes(x=x,y=y,group=index)) +
+  geom_smooth(method = lm,se=F,lwd=0.5) +
+  ylim(-250,500) +
+  theme_bw()
+```
+
+## Regression Basics
+
+- We sample from the population for $K=2000$ times and calculate $\hat{\beta}_1$ and $\hat{\beta}_0$ for each sample.
+
+```{r,message=FALSE,echo=FALSE,fig.height=3, fig.width=4, fig.align="center", echo=FALSE,warning=FALSE}
+total_sample <- data.frame()
+for (i in 1:100){
+  ## draw a sample
+  set.seed(i)
+  sample <- pop[sample(nrow(pop), 1000), ]
+  sample$index <- i
+  total_sample <- rbind(total_sample,sample)
+}
+
+## plot the sample-level correlation
+total_sample %>%
+  ggplot(aes(x=x,y=y,group=index)) +
+  geom_smooth(method = lm,se=F,lwd=0.5) +
+  ylim(-250,500) +
+  theme_bw()
+```
+
+---
+
+## Regression Basics
+
+- In around $95\%$ of the cases, $\hat{\beta}_1$ will fall into:
+
+```{r,message=FALSE,echo=FALSE,fig.height=3, fig.width=4, fig.align="center", echo=FALSE,warning=FALSE}
+total_sample <- data.frame()
+for (i in 1:100){
+  ## draw a sample
+  set.seed(i)
+  sample <- pop[sample(nrow(pop), 1000), ]
+  sample$index <- i
+  total_sample <- rbind(total_sample,sample)
+}
+
+## plot the sample-level correlation
+set.seed(104)
+sample <- pop[sample(nrow(pop), 1000), ]
+sample$index <- 104
+
+total_sample %>%
+  ggplot(aes(x=x,y=y,group=index)) +
+  geom_smooth(method = lm,se=F,lwd=0.5) +
+  geom_smooth(data = sample, method = lm, lwd=0.5, color="darkred", fill = "darkred") +
+  ylim(-250,500) +
+  theme_bw()
+```
+
+---
+
+## Regression Basics
+
+- The standard deviation of these $K$ $\hat{\beta}_1$s, i.e., the standard error of $\hat{\beta}_1$, is
+- $\frac{\sigma_{\epsilon_i}/s_{x_i}}{\sqrt{n}}$ \pause
+- We never observe $\sigma_{\epsilon_i}$, instead, we use the sample error standard deviation $s_{e_i}$ to estimate $\sigma_{\epsilon_i}$
+- This leads to $\frac{s_{e_i}/s_{x_i}}{\sqrt{n-2}}$ as an unbiased estimate (no need to memorize any of these) \pause
+- This is also why in a regression table, only $t-$score rather than $z-$score is reported. We almost always underestimate $\sigma_{\epsilon_i}$ by using $s_{e_i}$ 
+
+---
+
+## Exercise
+
+- To estimate the Data-Generating Process in the population: $Y_i = \beta_0 + \beta_1X_i + \epsilon_i$, a sample of $n=1000$ is drawn. A linear regression line is fitted to the observed data: $y_i = \hat{\beta}_0 + \hat{\beta}_1x_i + e_i$, where $e_i$ describes the random error that cannot be explained by the linear regression line. How are $\hat{\beta}_0$ and $\hat{\beta}_1$ determined?
+
+  - A. By crossing the mean point $(\bar{x}_i,\bar{y}_i)$
+  - B. By minimizing $\sum_{i}^{n}e_i$
+  - C. By minimizing $\sum_{i}^{n}|e_i|$
+  - D. By maximizing $\sum_{i}^{n}e_i^2$
+  - E. None of the above
+
+---
+
+## Exercise
+
+- To minimize $\sum_{i}^{n}e_i^2$, which of the following(s) have to be satisfied?
+
+  - A. $\hat{\beta}_1 = \frac{Cov(x_i,y_i)}{Var(y_i)}$
+  - B. The linear regression line must cross the mean point $(\bar{x}_i,\bar{y}_i)$
+  - C. The sum of the error term $\sum_{i=1}^{n}e_i = 0$
+  - D. The sum of the absolute values of the error term $\sum_{i=1}^{n}|e_i|$ must be minimized
+
+---
+
+$$
+\begin{aligned}
+\sum_{i=1}^{n}e_i &= \sum_{i=1}^{n} \left[ y_i- (\hat{\beta}_0 + \hat{\beta}_1x_i) \right] \\
+&= \sum_{i=1}^{n}y_i - \sum_{i=1}^{n}(\hat{\beta}_0 + \hat{\beta}_1x_i) \\
+&= n\bar{y} - n\hat{\beta}_0 + n\hat{\beta}_1\bar{x} \\
+&= n(\bar{y} - \hat{\beta}_0 + \hat{\beta}_1\bar{x}) \\
+&= 0
+\end{aligned}
+$$
+
+---
+
+## Intepretation of Regression
+
+- Suppose we are interested in the returns to education in the United States. We sampled from the population $n=1000$ individuals, surveyed their years of education ($x_i$) and annual income at the age of 30 ($y_i$). We use a linear regression model to fit the data and find that $y_i = 5000 + 4000x_i + e_i$
+- How do interpret the main result? \pause
+- On average, one additional year of education is associated with 4000 more annual income at the age of 30. \pause
+- Do we consider this association as a causal relationship? That is, if a person who had never been to college after finishing high school hypothetically completed 4-year college education, would he/she have earned $16K$ more annually?
+
+---
+
+## Intepretation of Regression
+
+- Do we consider this association as a causal relationship?
+- Very likely no. Other factors like family conditions may also affect the probability of gaining additional year of education and, at the same time, the earning potential
+- This is one critical reason why we want to have multivariate regression
+- We will review multivariate regression in more detail next week
+
+
+# Regression in R
+
+## Read Data
+
+```{r}
+## set your working directory - you should set your own unique one!
+setwd("~/Dropbox/Teaching/SOCUA-302/Week 8")
+
+## read csv data - this is 2021 GSS data
+gss <- read.csv("GSS_SOCUA_W8.csv")
+```
+
+---
+
+## Bivariate Regression
+
+- `R` reports the estimates of intercept, slope (coefficient), their standard errors, their corresponding $t-$value, and $p-$values
+
+
+```{r,eval=FALSE}
+## specify regression model
+model <- lm(rincome ~ educ, gss)
+
+## check the results
+summary(model)
+```
+
+---
+
+\footnotesize
+
+```{r,echo=FALSE}
+## specify regression model
+model <- lm(rincome ~ educ, gss)
+
+## check the results
+summary(model)
+```
+

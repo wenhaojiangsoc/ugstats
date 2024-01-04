@@ -1,0 +1,279 @@
+---
+title: "Week 13: Categorical Data III"
+author: "Wenhao Jiang"
+institute: |
+           | Department of Sociology
+           | New York University
+date: December 2, 2022
+output: beamer_presentation
+classoption: "aspectratio=1610"
+theme: "default"
+outertheme: "miniframes"
+header-includes:
+  - \definecolor{nagivation}{rgb}{0,0,0.3}
+  - \definecolor{main}{rgb}{0,0,0.5}
+  - \setbeamercolor{section in head/foot}{bg=nagivation,fg=white}
+  - \usecolortheme[named=main]{structure}
+  - \setbeamertemplate{footline}[page number]
+  - \setbeamerfont{footnote}{size=\footnotesize}
+  - \setbeamerfont{caption}{size=\footnotesize}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(dplyr)
+library(ggplot2)
+```
+
+# Categorical Data as Dependent Variable
+
+## Categorical Data as Independent Variable - Basics
+
+- We talked about the case where categorical data are independent variables two weeks ago
+- Instead of (incorrectly) assuming an additive model for categorical data (e.g. race) in a regression model e.g., $Abscale_i = \hat{\beta}_0 + \hat{\beta}_1edu_i + \hat{\beta}_2women_i + \hat{\beta}_3race_i + e_i$, we transform race into 5 "dummy variables" (dummy means a binary variable created from categorical variables), `white`, `black`, `hispanic`, `asian`, `others`, and omit one dummy group as the reference group
+
+---
+
+## Categorical Data as Dependent Variable - Basics
+
+- In many cases, categorical data are dependent variables, such as a binary categorical variable indicating whether the respondent supports legal abortion or has any religious identification \pause
+- We may be interested in the association between years of education and religious identification (1=having some identification; 0=no religious identification)
+- It is however incorrect to use the OLS model $relig_i = \hat{\beta_0} + \hat{\beta_1}edu_i + e_i$ to estimate the association
+- Why?
+
+---
+
+## Categorical Data as Dependent Variable - Basics
+
+```{r,message=FALSE, fig.height=2.5, fig.width=4, fig.align="center", echo=FALSE, warning=FALSE}
+## set your working directory - you should set your own unique one!
+setwd("~/Dropbox/Teaching/SOCUA-302/Week 8")
+
+## read csv data - this is 2021 GSS data
+gss <- read.csv("GSS_SOCUA_W8.csv")
+
+## recode religion
+gss[which(gss$relig!=4),
+    "relig"] <- 1
+gss[which(gss$relig==4),
+    "relig"] <- 0
+
+gss <- gss %>%
+  dplyr::mutate(relig=case_when(educ>16 ~ 0,
+                         TRUE ~ relig)) %>%
+  filter(educ <= 18) 
+
+gss$random <- rbinom(dim(gss)[1],1,0.1)
+
+gss[which(gss$educ>16&gss$random==1),"relig"] <- 1
+
+gss %>%
+  ggplot(aes(x=educ,y=relig)) +
+  geom_jitter(width = 0.35,
+              height = 0.05,
+              shape = 16,
+              alpha = 0.5,
+              size = 0.1,
+              color = "darkblue") +
+  geom_smooth(method = "lm",lwd=0.3, se=T,
+              color="darkred") +
+  theme_bw() +
+  xlab("Years of Education") +
+  ylab("Having Religious identification") +
+  theme(text=element_text(family="Times"),
+              plot.title = element_text(size=6),
+              axis.text.x=element_text(size=6),
+              axis.text.y=element_text(size=6))
+  
+```
+
+---
+
+## Categorical Data as Dependent Variable - Motivation
+
+- When we treat religious identification, a categorical variable, as a continuous variable and apply an OLS model in estimation, we may have fitted values that do not make sense in reality (e.g., $\hat{y}>1$, or $\hat{y}<0$)
+- We want predictions/fitted values to be bounded within 0 and 1, i.e., for a given set of attributes (education), the probability for the respondent to have some religious identification is within 0 and 1 \pause
+- This desired property of "boundedness" motivates **logistic** models and **logit** transformations
+- (From Lecture) The assumptions of OLS requires that the error terms are normally distributed with a mean of zero and a constant variance, which is impossible when the dependent variable is e.g. dichotomous
+
+---
+
+## Categorical Data as Dependent Variable - Logit Transformation
+
+- Before any transformation, we will need to first think of the predicted/fitted dependent variable as the **probabilities** of having religious identification ($P_{relig}$), given some observed characteristic such as education
+  - This is analogous to OLS, where the estimated linear line models the predicted "trend"/"value" of some dependent variable \pause
+- Logit transformation: $\log(\frac{P_{relig}}{1-P_{relig}}) = \hat{\beta_0} + \hat{\beta_1}edu_i$ \pause
+- But why in this specific form?
+
+---
+
+## Categorical Data as Dependent Variable - Sigmoid Function
+
+- The logit transformation originates from the Sigmoid Function
+- $f(x) = \frac{1}{1+e^{-x}}$
+
+```{r,message=FALSE, fig.height=2.5, fig.width=4, fig.align="center", echo=FALSE, warning=FALSE}
+dat <-
+  data.frame(
+  x = seq(-10,10,0.05)
+)
+dat$y <- (1)/(1+exp(-dat$x))
+dat %>%
+  ggplot(aes(x=x,y=y)) +
+  geom_line(color="darkred") +
+  theme_bw() +
+  xlab("x") +
+  ylab("f(x)") +
+  ggtitle("Sigmoid Function") +
+  theme(text=element_text(family="Times"),
+              plot.title = element_text(size=10),
+              axis.text.x=element_text(size=6),
+              axis.text.y=element_text(size=6))
+```
+
+---
+
+## Categorical Data as Dependent Variable - Sigmoid Function
+
+- The logit transformation originates from the Sigmoid Function
+- $f(x) = \frac{1}{1+e^{-x}}$
+- The Sigmoid Function has two desired properties
+  - 1. $f(x)$ is bounded within 0 and 1
+  - 2. $x$ has no limit \pause
+- The Sigmoid Function is therefore a good candidate to model the **probabilities** of some categorical dependent variable (e.g., having religious identification $P_{relig}$), given some observed characteristic such as education \pause
+- We borrow the idea from OLS and estimate $P_{relig_i} = \frac{1}{1+e^{-(\hat{\beta_0} + \hat{\beta_1}edu_i)}}$ \pause
+- With some algebra
+- $1-P_{relig_i} = 1-\frac{1}{1+e^{-(\hat{\beta_0} + \hat{\beta_1}edu_i)}} = \frac{e^{-(\hat{\beta_0} + \hat{\beta_1}edu_i)}}{1+e^{-(\hat{\beta_0} + \hat{\beta_1}edu_i)}}$
+- $\frac{P_{relig_i}}{1-P_{relig_i}} = \frac{1}{e^{-(\hat{\beta_0} + \hat{\beta_1}edu_i)}}$
+- $\log(\frac{P_{relig_i}}{1-P_{relig_i}}) = \log(\frac{1}{e^{-(\hat{\beta_0} + \hat{\beta_1}edu_i)}}) = \hat{\beta_0} + \hat{\beta_1}edu_i$ \pause
+- This is the logit transformation!
+
+---
+
+## Categorical Data as Dependent Variable - Sigmoid and Logit
+
+- Indeed, Sigmoid function and logit function are inverse functions for each other
+- Sigmoid function: $y = \frac{1}{1+e^{-x}}$
+- Inverse of Sigmoid function: $x = \frac{1}{1+e^{-y}} \rightarrow y = \log(\frac{x}{1-x})$
+- $\frac{1}{1+e^{-x}}$ is bounded within 0 and 1. Inversely, the $x$ in $\log(\frac{x}{1-x})$ is bounded within 0 and 1
+- Note that the boundedness corresponds to $P_{relig_i}$. $\log(\frac{P_{relig_i}}{1-P_{relig_i}})$ is unbounded
+
+---
+
+## Categorical Data as Dependent Variable - Logit
+
+```{r,message=FALSE, fig.height=2.5, fig.width=4, fig.align="center", echo=FALSE, warning=FALSE}
+dat <-
+  data.frame(
+  x = seq(0.0001,0.9999,0.0001)
+)
+dat$y <- log(dat$x/(1-dat$x))
+dat %>%
+  ggplot(aes(x=x,y=y)) +
+  geom_line(color="darkred") +
+  theme_bw() +
+  xlab("x") +
+  ylab("logit(x)") +
+  ggtitle("Logit Function") +
+  theme(text=element_text(family="Times"),
+              plot.title = element_text(size=10),
+              axis.text.x=element_text(size=6),
+              axis.text.y=element_text(size=6))
+```
+
+---
+
+## Categorical Data as Dependent Variable - Odds and Odds Ratio
+
+- We call the term $\frac{P_{relig_i}}{1-P_{relig_i}}$ in the $\log()$ function “odds” (probability of "event" divided by probability of no "event")
+- Odds $\frac{P_{relig_i}}{1-P_{relig_i}} = exp(\hat{\beta_0} + \hat{\beta_1}edu_i)$ \pause
+- Odds ratio describes the (multiplicative) change of the odds when the independent variable of interest changes by 1 unit (with other independent variables remain constant in the case of multivariate regression)
+- Odds ratio = $\frac{Odds_{edu_i+1}}{Odds_{edu_i}} = \frac{exp(\hat{\beta_0} + \hat{\beta_1}(edu_i+1))}{exp(\hat{\beta_0} + \hat{\beta_1}edu_i)} = exp(\hat{\beta_1})$
+- You may find it analogous to OLS, where $\hat{\beta_1}$ describes the (additive) change of the dependent variable when the independent variable change by 1 unit
+
+---
+
+## Categorical Data as Dependent Variable - Interpret Results
+
+- We estimate the logistic regression model 
+- $\log(\frac{P_{relig_i}}{1-P_{relig_i}}) = \hat{\beta_0} + \hat{\beta_1}edu_i$
+
+\footnotesize
+
+```{r,message=FALSE, results="asis", echo=FALSE, warning=FALSE}
+logit <- glm(relig ~ educ, data = gss, family = "binomial")
+library(stargazer)
+stargazer(logit, out = "text",
+          single.row = F,
+          header=FALSE,
+          title = "The association between education and religious identification",
+          digits = 3,
+          omit.stat = c("rsq","f","ser"))
+```
+
+---
+
+- $\log(\frac{P_{relig_i}}{1-P_{relig_i}}) = \hat{\beta_0} + \hat{\beta_1}edu_i = 4.94 - 0.31\times educ$
+- A year increase in education is associated with 0.31-unit decrease in $\log(\frac{P_{relig_i}}{1-P_{relig_i}})$
+- The associated change of $P_{relig_i}$ is non-linear
+
+---
+
+## Categorical Data as Dependent Variable - Predicted Probabilities
+
+- After logit transformation $\frac{P_{relig_i}}{1-P_{relig_i}} = exp(\hat{\beta_0} + \hat{\beta_1}edu_i)$, the predicted $P_{relig}$ from Maximum Likelihood Estimation relative to years of education becomes
+
+```{r,message=FALSE, fig.height=2.5, fig.width=4, fig.align="center", echo=FALSE, warning=FALSE}
+logit <- glm(relig ~ educ, data = gss, family = "binomial")
+predict <- data.frame(educ=seq(0,18,0.1))
+predict$predict_p <- 1/(1+exp(-(summary(logit)$coef[1,1]+summary(logit)$coef[2,1]*predict$educ)))
+
+gss %>%
+  ggplot(aes(x=educ,y=relig)) +
+  geom_jitter(width = 0.35,
+              height = 0.05,
+              shape = 16,
+              alpha = 0.5,
+              size = 0.1,
+              color = "darkblue") +
+  geom_line(data=predict,aes(x=educ,y=predict_p),
+              color="darkred") +
+  theme_bw() +
+  xlab("Years of Education") +
+  ylab("Having Religious identification") +
+  theme(text=element_text(family="Times"),
+              plot.title = element_text(size=6),
+              axis.text.x=element_text(size=6),
+              axis.text.y=element_text(size=6))
+```
+
+---
+
+## Categorical Data as Dependent Variable - R Operations
+
+- $\log(\frac{P_{relig_i}}{1-P_{relig_i}}) = \hat{\beta_0} + \hat{\beta_1}edu_i$
+
+\footnotesize
+
+```{r,message=FALSE, results="asis", eval=FALSE, warning=FALSE}
+logit <- glm(relig ~ educ, data = gss, family = "binomial")
+library(stargazer)
+stargazer(logit, type = "text",
+          single.row = F,
+          header=FALSE,
+          title = "The association between education and religious identification",
+          digits = 3)
+```
+
+# Quiz 4 Reviews 
+
+## Exercise for Quiz 4
+
+- How to plot predicted values from OLS when the dependent variable is categorical?
+  - Note that in formal statistics, we do not use OLS when estimating categorical dependent variable. We use it here for simplicity
+  
+---
+
+## Exercise for Quiz 4
+
+- How to calculate Odds, Logit, and probability?
